@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	SYNC_PORT = 8500
-	DATA_PORT = 9410
+	SyncPort = 8500
+	DataPort = 9410
 )
 
 type Pkt struct {
@@ -68,16 +68,16 @@ type Client struct {
 
 func NewClient(addrs []string) (*Client, error) {
 	c := Client{}
-	if len(addrs) != PANELS_X*PANELS_Y {
+	if len(addrs) != PanelsX*PanelsY {
 		return nil, fmt.Errorf("invalid number of addresses, got %d for %dx%d panels",
-			len(addrs), PANELS_X, PANELS_Y)
+			len(addrs), PanelsX, PanelsY)
 	}
 	for _, addr := range addrs {
 		udpAddr, err := net.ResolveUDPAddr("udp4", addr)
 		if err != nil {
 			return nil, err
 		}
-		udpAddr.Port = DATA_PORT
+		udpAddr.Port = DataPort
 		c.panelAddrs = append(c.panelAddrs, udpAddr)
 	}
 	var err error
@@ -87,7 +87,7 @@ func NewClient(addrs []string) (*Client, error) {
 	}
 	c.syncSock, err = net.DialUDP("udp4", nil, &net.UDPAddr{
 		IP:   net.IPv4(255, 255, 255, 255),
-		Port: SYNC_PORT,
+		Port: SyncPort,
 	})
 	if err != nil {
 		return nil, err
@@ -109,8 +109,8 @@ func (c *Client) Send() error {
 
 	i := 0
 	buf := new(bytes.Buffer)
-	for y := 0; y < PANELS_Y; y++ {
-		for x := 0; x < PANELS_X; x++ {
+	for y := 0; y < PanelsY; y++ {
+		for x := 0; x < PanelsX; x++ {
 			c.dataPkg.panelLeft, c.dataPkg.panelLeft = c.screen.Panel(x, y)
 			err := binary.Write(buf, binary.LittleEndian, c.dataPkg)
 			if err != nil {

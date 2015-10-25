@@ -13,20 +13,20 @@ import (
 )
 
 const (
-	PANEL_WIDTH  = 18
-	PANEL_HWIDTH = PANEL_WIDTH / 2
-	PANEL_HEIGHT = 18
+	PanelWidth  = 18
+	PanelHwidth = PanelWidth / 2
+	PanelHeight = 18
 
-	PANELS_X = 4
-	PANELS_Y = 3
+	PanelsX = 4
+	PanelsY = 3
 
-	SCREEN_WIDTH  = PANEL_WIDTH * PANELS_X
-	SCREEN_HEIGHT = PANEL_HEIGHT * PANELS_Y
+	ScreenWidth  = PanelWidth * PanelsX
+	ScreenHeight = PanelHeight * PanelsY
 
-	PIXEL_STRIDE   = 3
-	PANEL_STRIDE   = PIXEL_STRIDE * PANEL_WIDTH
-	LINE_STRIDE    = PANEL_STRIDE * PANELS_X
-	PANEL_Y_STRIDE = LINE_STRIDE * PANEL_HEIGHT
+	PixelStride  = 3
+	PanelStride  = PixelStride * PanelWidth
+	LineStride   = PanelStride * PanelsX
+	PanelYStride = LineStride * PanelHeight
 )
 
 type Screen struct {
@@ -35,19 +35,19 @@ type Screen struct {
 
 func NewScreen() *Screen {
 	return &Screen{
-		Pix: make([]uint8, SCREEN_WIDTH*SCREEN_HEIGHT*PIXEL_STRIDE),
+		Pix: make([]uint8, ScreenWidth*ScreenHeight*PixelStride),
 	}
 }
 
 func (s *Screen) Set(x, y int, c color.RGBA) {
-	offset := y*LINE_STRIDE + x*PIXEL_STRIDE
+	offset := y*LineStride + x*PixelStride
 	s.Pix[offset] = c.R
 	s.Pix[offset+1] = c.G
 	s.Pix[offset+2] = c.B
 }
 
 func (s *Screen) At(x, y int) color.Color {
-	offset := y*LINE_STRIDE + x*PIXEL_STRIDE
+	offset := y*LineStride + x*PixelStride
 	return color.RGBA{
 		s.Pix[offset],
 		s.Pix[offset+1],
@@ -57,7 +57,7 @@ func (s *Screen) At(x, y int) color.Color {
 }
 
 func (s *Screen) Bounds() image.Rectangle {
-	return image.Rect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)
+	return image.Rect(0, 0, ScreenWidth, ScreenHeight)
 }
 
 func (s *Screen) ColorModel() color.Model {
@@ -67,9 +67,9 @@ func (s *Screen) ColorModel() color.Model {
 func (s *Screen) String() string {
 	var b []byte
 	offset := 0
-	for y := 0; y < SCREEN_HEIGHT; y++ {
-		for x := 0; x < SCREEN_WIDTH; x++ {
-			for c := 0; c < PIXEL_STRIDE; c++ {
+	for y := 0; y < ScreenHeight; y++ {
+		for x := 0; x < ScreenWidth; x++ {
+			for c := 0; c < PixelStride; c++ {
 				v := s.Pix[offset]
 				if v < 16 {
 					b = append(b, '0')
@@ -89,11 +89,11 @@ func (s *Screen) Panel(x, y int) ([486]uint8, [486]uint8) {
 	l := [486]uint8{}
 	r := [486]uint8{}
 
-	panelOffset := x*PANEL_STRIDE + y*PANEL_Y_STRIDE
-	for py := 0; py < PANEL_HEIGHT; py++ {
-		offset := panelOffset + py*LINE_STRIDE
-		copy(l[py*PANEL_WIDTH/2:], s.Pix[offset:offset+PANEL_HWIDTH*PIXEL_STRIDE])
-		copy(r[py*PANEL_WIDTH/2:], s.Pix[offset+PANEL_HWIDTH:offset+PANEL_WIDTH*PIXEL_STRIDE])
+	panelOffset := x*PanelStride + y*PanelYStride
+	for py := 0; py < PanelHeight; py++ {
+		offset := panelOffset + py*LineStride
+		copy(l[py*PanelWidth/2:], s.Pix[offset:offset+PanelHwidth*PixelStride])
+		copy(r[py*PanelWidth/2:], s.Pix[offset+PanelHwidth:offset+PanelWidth*PixelStride])
 
 	}
 	return l, r
@@ -101,8 +101,8 @@ func (s *Screen) Panel(x, y int) ([486]uint8, [486]uint8) {
 
 func LifeToScreen(l *life.Life, s *Screen) {
 	f := l.Field()
-	for y := 0; y < SCREEN_HEIGHT; y++ {
-		for x := 0; x < SCREEN_WIDTH; x++ {
+	for y := 0; y < ScreenHeight; y++ {
+		for x := 0; x < ScreenWidth; x++ {
 			c := f.Cell(x, y)
 			if c.Alive {
 				l := 0.9

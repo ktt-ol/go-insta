@@ -30,7 +30,7 @@ func main() {
 	// }
 
 	rand.Seed(time.Now().UTC().UnixNano())
-	l := life.NewLife(insta.SCREEN_WIDTH, insta.SCREEN_HEIGHT)
+	l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
 
 	frames := 50
 	blendSteps := 5
