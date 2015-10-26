@@ -3,7 +3,10 @@ package insta
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
 	"net"
+	"sync"
+	"time"
 
 	"fmt"
 )
@@ -18,13 +21,13 @@ type Pkt struct {
 	panelLeft       [486]uint8
 	brightnessLeft  uint8
 	contrastLeft    uint8
-	controlCLeft    uint8
+	afterglowLeft   uint8
 	controlDLeft    uint8
 	trailLeft       [49]byte
 	panelRight      [486]uint8
 	brightnessRight uint8
 	contrastRight   uint8
-	controlCRight   uint8
+	afterglowRight  uint8
 	controlDRight   uint8
 	trailRight      [49]byte
 }
@@ -43,6 +46,10 @@ func NewPkt() *Pkt {
 	p.brightnessRight = 128
 	p.contrastLeft = 128
 	p.contrastRight = 128
+	p.afterglowLeft = 80
+	p.afterglowRight = 80
+	p.controlDLeft = 0
+	p.controlDRight = 255
 	return &p
 }
 
@@ -64,10 +71,12 @@ type Client struct {
 	syncPkt    *Sync
 	dataPkg    *Pkt
 	screen     *Screen
+	fps        int
+	mu         *sync.Mutex
 }
 
 func NewClient(addrs []string) (*Client, error) {
-	c := Client{}
+	c := Client{mu: &sync.Mutex{}, fps: 50}
 	if len(addrs) != PanelsX*PanelsY {
 		return nil, fmt.Errorf("invalid number of addresses, got %d for %dx%d panels",
 			len(addrs), PanelsX, PanelsY)
@@ -99,14 +108,17 @@ func NewClient(addrs []string) (*Client, error) {
 }
 
 func (c *Client) SetScreen(s *Screen) {
-	c.screen = s
+	c.mu.Lock()
+	c.screen = s.Copy()
+	c.mu.Unlock()
 }
 
 func (c *Client) Send() error {
 	if c.screen == nil {
 		return nil
 	}
-
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	i := 0
 	buf := new(bytes.Buffer)
 	for y := 0; y < PanelsY; y++ {
@@ -140,6 +152,22 @@ func (c *Client) Send() error {
 	}
 
 	return nil
+}
+func (c *Client) SetFPS(fps int) {
+	if fps < 0 || fps > 100 {
+		fps = 50
+	}
+	c.fps = fps
+}
+
+func (c *Client) Run() {
+	t := time.Tick(time.Duration(1000.0/float32(c.fps)) * time.Millisecond)
+	for _ = range t {
+		if err := c.Send(); err != nil {
+			log.Printf("error: while sending packages: %v", err)
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 // localSourceIP returns the local IP address that is in the same network as target

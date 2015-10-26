@@ -31,17 +31,19 @@ func main() {
 
 	// s.Set(0, 18, color.RGBA{255, 255, 255, 0})
 	// fmt.Println(s)
-	c.SetScreen(s)
 
+	c.SetFPS(50)
+	go c.Run()
+
+	prev := s.Copy()
 	for {
-		l.Step()
 		insta.LifeToScreen(l, s)
-
-		if err := c.Send(); err != nil {
-			log.Fatal(err)
+		for _, img := range insta.BlendScreens(prev, s, 20) {
+			c.SetScreen(img)
+			time.Sleep(1000 / 50 * time.Millisecond)
 		}
-		time.Sleep(20 * time.Millisecond)
-		// return
+		l.Step()
+		prev, s = s, prev
 	}
 
 	// frames := 50

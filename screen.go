@@ -39,6 +39,12 @@ func NewScreen() *Screen {
 	}
 }
 
+func (s *Screen) Copy() *Screen {
+	r := NewScreen()
+	copy(r.Pix, s.Pix)
+	return r
+}
+
 func (s *Screen) Set(x, y int, c color.RGBA) {
 	offset := y*LineStride + x*PixelStride
 	s.Pix[offset] = c.R
@@ -137,4 +143,18 @@ func BlendImages(a, b image.Image, steps int) []*image.Paletted {
 		imgs[i] = dst
 	}
 	return imgs
+}
+
+func BlendScreens(a, b *Screen, steps int) []*Screen {
+	screens := make([]*Screen, steps)
+	for i := 0; i < steps; i++ {
+		dst := NewScreen()
+
+		t := 1 / float32(steps) * float32(i+1)
+		for i := 0; i < ScreenWidth*ScreenHeight*PixelStride; i++ {
+			dst.Pix[i] = uint8((1-t)*float32(a.Pix[i]) + t*float32(b.Pix[i]))
+		}
+		screens[i] = dst
+	}
+	return screens
 }
