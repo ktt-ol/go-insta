@@ -73,11 +73,7 @@ func NewClient(addrs []string) (*Client, error) {
 			len(addrs), PanelsX, PanelsY)
 	}
 	for _, addr := range addrs {
-		udpAddr, err := net.ResolveUDPAddr("udp4", addr)
-		if err != nil {
-			return nil, err
-		}
-		udpAddr.Port = DataPort
+		udpAddr := &net.UDPAddr{IP: net.ParseIP(addr), Port: DataPort}
 		c.panelAddrs = append(c.panelAddrs, udpAddr)
 	}
 	var err error
@@ -85,8 +81,13 @@ func NewClient(addrs []string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	lip, err := localSourceIP(net.ParseIP(addrs[0]))
+	if err != nil {
+		return nil, err
+	}
 	c.syncSock, err = net.DialUDP("udp4",
-		&net.UDPAddr{IP: net.IPv4(192, 168, 3, 1), Port: SyncPort},
+		&net.UDPAddr{IP: lip, Port: SyncPort},
 		&net.UDPAddr{IP: net.IPv4(255, 255, 255, 255), Port: DataPort})
 	if err != nil {
 		return nil, err
@@ -139,4 +140,27 @@ func (c *Client) Send() error {
 	}
 
 	return nil
+}
+
+// localSourceIP returns the local IP address that is in the same network as target
+func localSourceIP(target net.IP) (net.IP, error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return net.IPv4zero, err
+	}
+	for _, i := range ifaces {
+		addrs, err := i.Addrs()
+		if err != nil {
+			return net.IPv4zero, err
+		}
+		for _, addr := range addrs {
+			switch v := addr.(type) {
+			case *net.IPNet:
+				if v.Contains(target) {
+					return v.IP, nil
+				}
+			}
+		}
+	}
+	return net.IPv4zero, fmt.Errorf("found no interface for %v", target)
 }
