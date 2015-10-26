@@ -14,11 +14,11 @@ import (
 
 const (
 	PanelWidth  = 18
-	PanelHwidth = PanelWidth / 2
+	PanelHWidth = PanelWidth / 2
 	PanelHeight = 18
 
-	PanelsX = 4
-	PanelsY = 3
+	PanelsX = 3
+	PanelsY = 2
 
 	ScreenWidth  = PanelWidth * PanelsX
 	ScreenHeight = PanelHeight * PanelsY
@@ -92,9 +92,8 @@ func (s *Screen) Panel(x, y int) ([486]uint8, [486]uint8) {
 	panelOffset := x*PanelStride + y*PanelYStride
 	for py := 0; py < PanelHeight; py++ {
 		offset := panelOffset + py*LineStride
-		copy(l[py*PanelWidth/2:], s.Pix[offset:offset+PanelHwidth*PixelStride])
-		copy(r[py*PanelWidth/2:], s.Pix[offset+PanelHwidth:offset+PanelWidth*PixelStride])
-
+		copy(l[py*PanelHWidth*PixelStride:], s.Pix[offset:offset+PanelHWidth*PixelStride])
+		copy(r[py*PanelHWidth*PixelStride:], s.Pix[offset+PanelHWidth*PixelStride:offset+PanelWidth*PixelStride])
 	}
 	return l, r
 }
@@ -105,11 +104,7 @@ func LifeToScreen(l *life.Life, s *Screen) {
 		for x := 0; x < ScreenWidth; x++ {
 			c := f.Cell(x, y)
 			if c.Alive {
-				l := 0.9
-				if c.Count == 2 {
-					l = 1.0
-				}
-				c := colorful.Hcl(float64(c.Hue), 1.3, l)
+				c := colorful.Hsv(float64(c.Hue), 0.7, 0.8)
 				s.Set(x, y, color.RGBA{uint8(c.R * 255), uint8(c.G * 255), uint8(c.B * 255), 128})
 			} else {
 				s.Set(x, y, color.RGBA{0, 0, 0, 128})

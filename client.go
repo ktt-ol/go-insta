@@ -34,7 +34,7 @@ func NewPkt() *Pkt {
 	copy(p.head[:], []byte("INSTA-INET\x00\x01\x00\x00\x01\xac\x10\x05\x00\x00"+
 		/* img 1, sync 8: */ "\x01"+"\x00\x01"+
 		/* frame counter */ "\x00\x00"+"\x00\x00\x00\x00\x01\xe6\x00\x1a\x00"))
-	copy(p.trailLeft[:], []byte("\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x14\x91\x45\x01"+
+	copy(p.trailLeft[:], []byte("\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x14\x91\x49\x45\x01"+
 		/* 00|01|02 cycle */ "\x00"+"\x00\x01"+
 		/* e3|6c|e0 cycle */ "\xe3"+"\x80\x16\x08"+
 		/* "checksum" (cycle+ip) */ "\x00\x00\x00\x00\x00\x00\x00\x00\x00"+"\x00\x00\x00\x00\x00\x00"))
@@ -53,7 +53,7 @@ type Sync struct {
 func NewSync() *Sync {
 	s := Sync{}
 	copy(s.head[:], []byte("INSTA-INET\x00\x01\x00\x00\x01\xac\x10\x05\x00\x00"+
-		/* img 1, sync 8: */ "\x01"+"\x00\x00\x00\x00\x00\x00"))
+		/* img 1, sync 8: */ "\x08"+"\x00\x00\x00\x00\x00\x00"))
 	return &s
 }
 
@@ -85,10 +85,9 @@ func NewClient(addrs []string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.syncSock, err = net.DialUDP("udp4", nil, &net.UDPAddr{
-		IP:   net.IPv4(255, 255, 255, 255),
-		Port: SyncPort,
-	})
+	c.syncSock, err = net.DialUDP("udp4",
+		&net.UDPAddr{IP: net.IPv4(192, 168, 3, 1), Port: SyncPort},
+		&net.UDPAddr{IP: net.IPv4(255, 255, 255, 255), Port: DataPort})
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +110,7 @@ func (c *Client) Send() error {
 	buf := new(bytes.Buffer)
 	for y := 0; y < PanelsY; y++ {
 		for x := 0; x < PanelsX; x++ {
-			c.dataPkg.panelLeft, c.dataPkg.panelLeft = c.screen.Panel(x, y)
+			c.dataPkg.panelLeft, c.dataPkg.panelRight = c.screen.Panel(x, y)
 			err := binary.Write(buf, binary.LittleEndian, c.dataPkg)
 			if err != nil {
 				return err

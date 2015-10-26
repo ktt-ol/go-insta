@@ -72,10 +72,15 @@ func (f *Field) Next(x, y int) Cell {
 	//   otherwise: off.
 	if alive == 3 || alive == 2 && f.Alive(x, y) {
 		c := f.Cell(x, y)
-		c.Alive = true
 		c.Count = alive
+		if c.Alive {
+			alive += 1
+			hue += c.Hue
+		}
+		c.Alive = true
 		// Calculate median Hue of all alive Cells, shift by fixed value
-		c.Hue = float32(math.Mod(float64(hue)/float64(alive), 360)) + 2.0
+		// fmt.Println(hue, alive, c.Hue, float32(math.Mod(float64(hue)/float64(alive)+2.0, 360)))
+		c.Hue = float32(math.Mod(float64(hue)/float64(alive)+2.0, 360))
 		return c
 	}
 	return Cell{}
@@ -93,6 +98,9 @@ func NewLife(w, h int) *Life {
 	for i := 0; i < (w * h / 4); i++ {
 		a.Set(rand.Intn(w), rand.Intn(h), Cell{Hue: rand.Float32() * 360, Count: 1, Alive: true})
 	}
+	// a.Set(10, 10, Cell{Alive: true, Count: 2, Hue: 100})
+	// a.Set(10, 11, Cell{Alive: true, Count: 3, Hue: 100})
+	// a.Set(10, 12, Cell{Alive: true, Count: 2, Hue: 100})
 	return &Life{
 		a: a, b: NewField(w, h),
 		w: w, h: h,
