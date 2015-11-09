@@ -33,6 +33,10 @@ func NewField(w, h int) *Field {
 
 // Set sets the state of the specified cell to the given value.
 func (f *Field) Set(x, y int, b Cell) {
+	x += f.w
+	x %= f.w
+	y += f.h
+	y %= f.h
 	f.s[y][x] = b
 }
 
@@ -90,25 +94,35 @@ func (f *Field) Next(x, y int) Cell {
 type Life struct {
 	a, b *Field
 	w, h int
+	add  chan struct{}
 }
 
 // NewLife returns a new Life game state with a random initial state.
 func NewLife(w, h int) *Life {
 	a := NewField(w, h)
-	for i := 0; i < (w * h / 4); i++ {
-		a.Set(rand.Intn(w), rand.Intn(h), Cell{Hue: rand.Float32() * 360, Count: 1, Alive: true})
-	}
-	// a.Set(10, 10, Cell{Alive: true, Count: 2, Hue: 100})
-	// a.Set(10, 11, Cell{Alive: true, Count: 3, Hue: 100})
-	// a.Set(10, 12, Cell{Alive: true, Count: 2, Hue: 100})
-	return &Life{
+	// for i := 0; i < (w * h / 4); i++ {
+	// a.Set(rand.Intn(w), rand.Intn(h), Cell{Hue: rand.Float32() * 360, Count: 1, Alive: true})
+	// }
+
+	l := &Life{
 		a: a, b: NewField(w, h),
 		w: w, h: h,
+		add: make(chan struct{}, 50),
 	}
+	l.addSmallFish(10, 10, Cell{Alive: true, Hue: 100})
+	l.addGlider(0, 0, Cell{Alive: true, Hue: 150})
+	return l
 }
 
 // Step advances the game by one instant, recomputing and updating all cells.
 func (l *Life) Step() {
+
+	select {
+	case <-l.add:
+		l.addRandomSpaceship()
+	default:
+	}
+
 	// Update the state of the next field (b) from the current field (a).
 	for y := 0; y < l.h; y++ {
 		for x := 0; x < l.w; x++ {
@@ -121,6 +135,42 @@ func (l *Life) Step() {
 
 func (l *Life) Field() *Field {
 	return l.a
+}
+
+func (l *Life) AddRandomSpaceship() {
+	l.add <- struct{}{}
+}
+
+func (l *Life) addRandomSpaceship() {
+	x := int(rand.Intn(l.w))
+	y := int(rand.Intn(l.h))
+	c := Cell{Alive: true, Hue: rand.Float32() * 360}
+	switch rand.Intn(2) {
+	case 0:
+		l.addGlider(x, y, c)
+	case 1:
+		l.addSmallFish(x, y, c)
+	}
+}
+
+func (l *Life) addGlider(x, y int, c Cell) {
+	l.a.Set(x, y, c)
+	l.a.Set(x+1, y, c)
+	l.a.Set(x+2, y, c)
+	l.a.Set(x+2, y+1, c)
+	l.a.Set(x+1, y+2, c)
+}
+
+func (l *Life) addSmallFish(x, y int, c Cell) {
+	l.a.Set(x, y, c)
+	l.a.Set(x+1, y, c)
+	l.a.Set(x+2, y, c)
+	l.a.Set(x+3, y, c)
+	l.a.Set(x+4, y+1, c)
+	l.a.Set(x+4, y+3, c)
+	l.a.Set(x, y+1, c)
+	l.a.Set(x, y+2, c)
+	l.a.Set(x+1, y+3, c)
 }
 
 // String returns the game board as a string.

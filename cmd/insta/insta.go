@@ -1,12 +1,15 @@
 package main
 
 import (
-	"log"
+	"flag"
 	"math/rand"
 	"time"
 
+	"github.com/comail/colog"
+
 	"github.com/ktt-ol/go-insta"
 	"github.com/ktt-ol/go-insta/life"
+	"github.com/ktt-ol/go-insta/tron"
 )
 
 var addrs = []string{
@@ -18,32 +21,64 @@ var addrs = []string{
 	"192.168.3.5", // # 6 at 0:f:17:10:53:b9
 }
 
-func main() {
-	s := insta.NewScreen()
-
-	c, err := insta.NewClient(addrs)
-	if err != nil {
-		log.Fatal(err)
-	}
-
+func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
-	l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
+}
 
-	// s.Set(0, 18, color.RGBA{255, 255, 255, 0})
-	// fmt.Println(s)
+func main() {
+	colog.Register()
+	colog.ParseFields(true)
 
-	c.SetFPS(50)
+	srv := insta.NewServer()
+
+	var (
+		fps     = flag.Int("fps", 25, "fps")
+		runLife = flag.Bool("life", false, "life")
+		runTron = flag.Bool("tron", false, "tron")
+	)
+
+	// c, err := insta.NewInstaClient(addrs)
+	// if err != nil {
+	//  log.Fatal(err)
+	// }
+
+	flag.Parse()
+
+	c := insta.NewTerm()
+	c.SetFPS(*fps)
 	go c.Run()
 
-	prev := s.Copy()
-	for {
-		insta.LifeToScreen(l, s)
-		for _, img := range insta.BlendScreens(prev, s, 20) {
-			c.SetScreen(img)
-			time.Sleep(1000 / 50 * time.Millisecond)
+	l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
+
+	srv.SetLife(l)
+	go srv.Run()
+
+	if *runLife {
+		s := insta.NewScreen()
+		prev := s.Copy()
+		sps := 10
+		blendSteps := int(float32(*fps) / float32(sps))
+		for {
+			insta.LifeToScreen(l, s)
+			for _, img := range insta.BlendScreens(prev, s, blendSteps) {
+				c.SetScreen(img)
+				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+			}
+			l.Step()
+			prev, s = s, prev
 		}
-		l.Step()
-		prev, s = s, prev
+	}
+
+	if *runTron {
+		s := insta.NewScreen()
+		tr := tron.NewGame(insta.ScreenWidth, insta.ScreenHeight)
+		srv.SetTron(tr)
+		for {
+			tr.Step()
+			tr.Paint(s)
+			c.SetScreen(s)
+			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+		}
 	}
 
 	// frames := 50

@@ -45,11 +45,20 @@ func (s *Screen) Copy() *Screen {
 	return r
 }
 
-func (s *Screen) Set(x, y int, c color.RGBA) {
+func (s *Screen) Set(x, y int, c color.Color) {
+	rgb := color.RGBA{}
+	if c, ok := c.(color.RGBA); ok {
+		rgb = c
+	} else {
+		r, g, b, _ := c.RGBA()
+		rgb.R = uint8(r / 256)
+		rgb.G = uint8(g / 256)
+		rgb.B = uint8(b / 256)
+	}
 	offset := y*LineStride + x*PixelStride
-	s.Pix[offset] = c.R
-	s.Pix[offset+1] = c.G
-	s.Pix[offset+2] = c.B
+	s.Pix[offset] = rgb.R
+	s.Pix[offset+1] = rgb.G
+	s.Pix[offset+2] = rgb.B
 }
 
 func (s *Screen) At(x, y int) color.Color {
@@ -147,6 +156,9 @@ func BlendImages(a, b image.Image, steps int) []*image.Paletted {
 
 func BlendScreens(a, b *Screen, steps int) []*Screen {
 	screens := make([]*Screen, steps)
+	if steps <= 1 {
+		return []*Screen{b}
+	}
 	for i := 0; i < steps; i++ {
 		dst := NewScreen()
 

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Insta</title>
+
+    <!-- Bootstrap -->
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+
+    <div data-role="page">
+
+        <div data-role="header">
+            <h1>Insta</h1>
+        </div><!-- /header -->
+        <div data-role="content">
+            <form>
+                <input class="btn" value="left" type="button">
+                <input class="btn" value="right" type="button">
+            </form>
+            <div id="msgs"></div>
+        </div><!-- /content -->
+
+
+    </div><!-- /page -->
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <!-- // <script src="/jquery-1.11.3.min.js"></script> -->
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <!-- // <script src="/main.js"></script> -->
+    <link rel="stylesheet" href="/static/jquery.mobile-1.4.5.min.css">
+    <script src="/static/jquery-1.11.1.min.js"></script>
+    <script src="/static/jquery.mobile-1.4.5.min.js"></script>
+<script type="text/javascript">
+    $(function() {
+    var conn;
+    var player = 'player';
+    $(".btn").on("tap", function() {
+        if (!conn) {
+            return false;
+        }
+        $('#msgs').append('<div>add</div>');
+        var msg = {'button': this.value, 'player': player};
+        conn.send(JSON.stringify(msg, null, '  '));
+        return false
+    });
+
+    if (window["WebSocket"]) {
+        conn = new WebSocket("ws://192.168.2.45:9090/ws");
+        conn.onclose = function(evt) {
+            $('#msgs').append("<div><b>Connection closed.</b></div>")
+        }
+        conn.onmessage = function(evt) {
+            console.log(evt.data)
+        }
+    } else {
+        $('#msgs').append("<div><b>Your browser does not support WebSockets.</b></div>");
+    }
+    });
+</script>
+</html>

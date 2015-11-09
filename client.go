@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	SyncPort = 8500
-	DataPort = 9410
+	syncPort = 8500
+	dataPort = 9410
 )
 
-type Pkt struct {
+type pkt struct {
 	head            [34]byte
 	panelLeft       [486]uint8
 	brightnessLeft  uint8
@@ -32,8 +32,8 @@ type Pkt struct {
 	trailRight      [49]byte
 }
 
-func NewPkt() *Pkt {
-	p := Pkt{}
+func newPkt() *pkt {
+	p := pkt{}
 	copy(p.head[:], []byte("INSTA-INET\x00\x01\x00\x00\x01\xac\x10\x05\x00\x00"+
 		/* img 1, sync 8: */ "\x01"+"\x00\x01"+
 		/* frame counter */ "\x00\x00"+"\x00\x00\x00\x00\x01\xe6\x00\x1a\x00"))
@@ -53,36 +53,41 @@ func NewPkt() *Pkt {
 	return &p
 }
 
-type Sync struct {
+type syncPkt struct {
 	head [27]byte
 }
 
-func NewSync() *Sync {
-	s := Sync{}
+func newSyncPkt() *syncPkt {
+	s := syncPkt{}
 	copy(s.head[:], []byte("INSTA-INET\x00\x01\x00\x00\x01\xac\x10\x05\x00\x00"+
 		/* img 1, sync 8: */ "\x08"+"\x00\x00\x00\x00\x00\x00"))
 	return &s
 }
 
-type Client struct {
+type Client interface {
+	SetScreen(s *Screen)
+	SetFPS(int)
+}
+
+type InstaClient struct {
 	syncSock   *net.UDPConn
 	dataSock   *net.UDPConn
 	panelAddrs []*net.UDPAddr
-	syncPkt    *Sync
-	dataPkg    *Pkt
+	syncPkt    *syncPkt
+	dataPkt    *pkt
 	screen     *Screen
 	fps        int
 	mu         *sync.Mutex
 }
 
-func NewClient(addrs []string) (*Client, error) {
-	c := Client{mu: &sync.Mutex{}, fps: 50}
+func NewInstaClient(addrs []string) (*InstaClient, error) {
+	c := InstaClient{mu: &sync.Mutex{}, fps: 50}
 	if len(addrs) != PanelsX*PanelsY {
 		return nil, fmt.Errorf("invalid number of addresses, got %d for %dx%d panels",
 			len(addrs), PanelsX, PanelsY)
 	}
 	for _, addr := range addrs {
-		udpAddr := &net.UDPAddr{IP: net.ParseIP(addr), Port: DataPort}
+		udpAddr := &net.UDPAddr{IP: net.ParseIP(addr), Port: dataPort}
 		c.panelAddrs = append(c.panelAddrs, udpAddr)
 	}
 	var err error
@@ -96,24 +101,24 @@ func NewClient(addrs []string) (*Client, error) {
 		return nil, err
 	}
 	c.syncSock, err = net.DialUDP("udp4",
-		&net.UDPAddr{IP: lip, Port: SyncPort},
-		&net.UDPAddr{IP: net.IPv4(255, 255, 255, 255), Port: DataPort})
+		&net.UDPAddr{IP: lip, Port: syncPort},
+		&net.UDPAddr{IP: net.IPv4(255, 255, 255, 255), Port: dataPort})
 	if err != nil {
 		return nil, err
 	}
 
-	c.syncPkt = NewSync()
-	c.dataPkg = NewPkt()
+	c.syncPkt = newSyncPkt()
+	c.dataPkt = newPkt()
 	return &c, nil
 }
 
-func (c *Client) SetScreen(s *Screen) {
+func (c *InstaClient) SetScreen(s *Screen) {
 	c.mu.Lock()
 	c.screen = s.Copy()
 	c.mu.Unlock()
 }
 
-func (c *Client) Send() error {
+func (c *InstaClient) Send() error {
 	if c.screen == nil {
 		return nil
 	}
@@ -123,8 +128,8 @@ func (c *Client) Send() error {
 	buf := new(bytes.Buffer)
 	for y := 0; y < PanelsY; y++ {
 		for x := 0; x < PanelsX; x++ {
-			c.dataPkg.panelLeft, c.dataPkg.panelRight = c.screen.Panel(x, y)
-			err := binary.Write(buf, binary.LittleEndian, c.dataPkg)
+			c.dataPkt.panelLeft, c.dataPkt.panelRight = c.screen.Panel(x, y)
+			err := binary.Write(buf, binary.LittleEndian, c.dataPkt)
 			if err != nil {
 				return err
 			}
@@ -153,14 +158,15 @@ func (c *Client) Send() error {
 
 	return nil
 }
-func (c *Client) SetFPS(fps int) {
+
+func (c *InstaClient) SetFPS(fps int) {
 	if fps < 0 || fps > 100 {
 		fps = 50
 	}
 	c.fps = fps
 }
 
-func (c *Client) Run() {
+func (c *InstaClient) Run() {
 	t := time.Tick(time.Duration(1000.0/float32(c.fps)) * time.Millisecond)
 	for _ = range t {
 		if err := c.Send(); err != nil {
