@@ -3,6 +3,8 @@ package tron
 import (
 	"image/draw"
 
+	"github.com/ktt-ol/go-insta"
+
 	"image/color"
 )
 
@@ -13,11 +15,26 @@ type Pos struct {
 type Direction int
 
 const (
-	Up Direction = iota
+	None Direction = iota
+	Up
 	Right
 	Down
 	Left
 )
+
+func (d Direction) RotateLeft() Direction {
+	if d == Up {
+		return Left
+	}
+	return Direction(int(d) - 1)
+}
+
+func (d Direction) RotateRight() Direction {
+	if d == Left {
+		return Up
+	}
+	return Direction(int(d) + 1)
+}
 
 type Player struct {
 	Color color.RGBA
@@ -26,17 +43,30 @@ type Player struct {
 	Dir   Direction
 }
 
+type Cell struct {
+	Color     color.RGBA
+	Set       bool
+	PlayerIdx int
+}
+
 type Field struct {
-	f    [][]*Player
+	f    [][]Cell
 	w, h int
 }
 
 func NewField(w, h int) *Field {
-	f := make([][]*Player, h)
+	f := make([][]Cell, h)
 	for i := range f {
-		f[i] = make([]*Player, w)
+		f[i] = make([]Cell, w)
 	}
 	return &Field{f: f, w: w, h: h}
+}
+
+func (f *Field) Clear() {
+	f.f = make([][]Cell, f.h)
+	for i := range f.f {
+		f.f[i] = make([]Cell, f.w)
+	}
 }
 
 type Game struct {
@@ -49,7 +79,9 @@ func NewGame(w, h int) *Game {
 		Field: NewField(w, h),
 		Players: []*Player{
 			&Player{Color: color.RGBA{255, 255, 0, 255}, Pos: Pos{X: 0, Y: 0}},
-			&Player{Color: color.RGBA{255, 0, 0, 255}, Pos: Pos{X: 10, Y: 0}},
+			&Player{Color: color.RGBA{255, 0, 255, 255}, Pos: Pos{X: insta.ScreenWidth - 1, Y: 0}},
+			&Player{Color: color.RGBA{0, 255, 255, 55}, Pos: Pos{X: 0, Y: insta.ScreenHeight - 1}},
+			&Player{Color: color.RGBA{255, 0, 0, 255}, Pos: Pos{X: insta.ScreenWidth - 1, Y: insta.ScreenHeight - 1}},
 		},
 	}
 	return g
@@ -59,9 +91,9 @@ func NewGame(w, h int) *Game {
 func (f *Field) movePos(p Pos, d Direction) Pos {
 	switch d {
 	case Up:
-		p.Y += 1
-	case Down:
 		p.Y -= 1
+	case Down:
+		p.Y += 1
 	case Right:
 		p.X += 1
 	case Left:
@@ -74,25 +106,51 @@ func (f *Field) movePos(p Pos, d Direction) Pos {
 	return p
 }
 
-func (g *Game) Step() {
-	for _, p := range g.Players {
-		// if rand.Intn(4) == 0 {
-		// 	p.Dir += Direction(rand.Intn(3) - 1)
-		// 	p.Dir += 4
-		// 	p.Dir %= 4
-		// }
+func (g *Game) Step(pads []insta.Pad) {
+	for i, p := range g.Players {
+		if pads[i].Up() || pads[i].Triangle() {
+			p.Dir = Up
+		}
+		if pads[i].Down() || pads[i].Cross() {
+			p.Dir = Down
+		}
+		if pads[i].Left() || pads[i].Square() {
+			p.Dir = Left
+		}
+		if pads[i].Right() || pads[i].Circle() {
+			p.Dir = Right
+		}
+
+		if p.Dir == None {
+			continue
+		}
+
 		p.Pos = g.Field.movePos(p.Pos, p.Dir)
+		if g.Field.f[p.Pos.Y][p.Pos.X].Set {
+			g.Field.Clear()
+			for _, p := range g.Players {
+				p.Dir = None
+			}
+			return
+		}
 	}
-	for _, p := range g.Players {
-		g.Field.f[p.Pos.Y][p.Pos.X] = p
+
+	for i, p := range g.Players {
+		c := g.Field.f[p.Pos.Y][p.Pos.X]
+		c.Set = true
+		c.PlayerIdx = i
+		c.Color = p.Color
+		g.Field.f[p.Pos.Y][p.Pos.X] = c
 	}
 }
 
 func (g *Game) Paint(img draw.Image) {
 	for y := 0; y < g.Field.h; y++ {
 		for x := 0; x < g.Field.w; x++ {
-			if g.Field.f[y][x] != nil {
+			if g.Field.f[y][x].Set {
 				img.Set(x, y, g.Field.f[y][x].Color)
+			} else {
+				img.Set(x, y, color.RGBA{0, 0, 0, 0})
 			}
 		}
 	}

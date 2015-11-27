@@ -116,7 +116,6 @@ func NewLife(w, h int) *Life {
 
 // Step advances the game by one instant, recomputing and updating all cells.
 func (l *Life) Step() {
-
 	select {
 	case <-l.add:
 		l.addRandomSpaceship()
