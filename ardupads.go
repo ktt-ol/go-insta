@@ -108,41 +108,41 @@ func seekNewline(s *serial.Port) error {
 }
 
 const (
-	PSPAD_MASK_SELECT   = 0x01
-	PSPAD_MASK_START    = 0x08
-	PSPAD_MASK_UP       = 0x10
-	PSPAD_MASK_RIGHT    = 0x20
-	PSPAD_MASK_DOWN     = 0x40
-	PSPAD_MASK_LEFT     = 0x80
-	PSPAD_MASK_L2       = 0x01
-	PSPAD_MASK_R2       = 0x02
-	PSPAD_MASK_L1       = 0x04
-	PSPAD_MASK_R1       = 0x08
-	PSPAD_MASK_TRIANGLE = 0x10
-	PSPAD_MASK_CIRCLE   = 0x20
-	PSPAD_MASK_CROSS    = 0x40
-	PSPAD_MASK_SQUARE   = 0x80
+	PsMaskSelect   = 0x01
+	PsMaskStart    = 0x08
+	PsMaskUp       = 0x10
+	PsMaskRight    = 0x20
+	PsMaskDown     = 0x40
+	PsMaskLeft     = 0x80
+	PsMaskL2       = 0x01
+	PsMaskR2       = 0x02
+	PsMaskL1       = 0x04
+	PsMaskR1       = 0x08
+	PsMaskTriangle = 0x10
+	PsMaskCircle   = 0x20
+	PsMaskCross    = 0x40
+	PsMaskSquare   = 0x80
 )
 
 type Pad [6]byte
 
-func (p Pad) Up() bool    { return (p[0] & PSPAD_MASK_UP) != 0 }
-func (p Pad) Right() bool { return (p[0] & PSPAD_MASK_RIGHT) != 0 }
-func (p Pad) Down() bool  { return (p[0] & PSPAD_MASK_DOWN) != 0 }
-func (p Pad) Left() bool  { return (p[0] & PSPAD_MASK_LEFT) != 0 }
+func (p Pad) Up() bool    { return (p[0] & PsMaskUp) != 0 }
+func (p Pad) Right() bool { return (p[0] & PsMaskRight) != 0 }
+func (p Pad) Down() bool  { return (p[0] & PsMaskDown) != 0 }
+func (p Pad) Left() bool  { return (p[0] & PsMaskLeft) != 0 }
 
-func (p Pad) Select() bool { return (p[0] & PSPAD_MASK_SELECT) != 0 }
-func (p Pad) Start() bool  { return (p[0] & PSPAD_MASK_START) != 0 }
+func (p Pad) Select() bool { return (p[0] & PsMaskSelect) != 0 }
+func (p Pad) Start() bool  { return (p[0] & PsMaskStart) != 0 }
 
-func (p Pad) R1() bool { return (p[1] & PSPAD_MASK_R1) != 0 }
-func (p Pad) R2() bool { return (p[1] & PSPAD_MASK_R2) != 0 }
-func (p Pad) L1() bool { return (p[1] & PSPAD_MASK_L1) != 0 }
-func (p Pad) L2() bool { return (p[1] & PSPAD_MASK_L2) != 0 }
+func (p Pad) R1() bool { return (p[1] & PsMaskR1) != 0 }
+func (p Pad) R2() bool { return (p[1] & PsMaskR2) != 0 }
+func (p Pad) L1() bool { return (p[1] & PsMaskL1) != 0 }
+func (p Pad) L2() bool { return (p[1] & PsMaskL2) != 0 }
 
-func (p Pad) Triangle() bool { return (p[1] & PSPAD_MASK_TRIANGLE) != 0 }
-func (p Pad) Circle() bool   { return (p[1] & PSPAD_MASK_CIRCLE) != 0 }
-func (p Pad) Cross() bool    { return (p[1] & PSPAD_MASK_CROSS) != 0 }
-func (p Pad) Square() bool   { return (p[1] & PSPAD_MASK_SQUARE) != 0 }
+func (p Pad) Triangle() bool { return (p[1] & PsMaskTriangle) != 0 }
+func (p Pad) Circle() bool   { return (p[1] & PsMaskCircle) != 0 }
+func (p Pad) Cross() bool    { return (p[1] & PsMaskCross) != 0 }
+func (p Pad) Square() bool   { return (p[1] & PsMaskSquare) != 0 }
 
 func (p Pad) StickRight() (float32, float32) {
 	return (float32(p[2]) - 128) / 128, (float32(p[3]) - 128) / 128
