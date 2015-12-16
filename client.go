@@ -67,6 +67,7 @@ func newSyncPkt() *syncPkt {
 type Client interface {
 	SetScreen(s *Screen)
 	SetFPS(int)
+	Run()
 }
 
 type InstaClient struct {
