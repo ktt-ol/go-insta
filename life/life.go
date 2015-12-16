@@ -144,10 +144,12 @@ func (l *Life) addRandomSpaceship() {
 	x := int(rand.Intn(l.w))
 	y := int(rand.Intn(l.h))
 	c := Cell{Alive: true, Hue: rand.Float32() * 360}
-	switch rand.Intn(2) {
+	switch rand.Intn(3) {
 	case 0:
 		l.addGlider(x, y, c)
 	case 1:
+		l.addGliderInv(x, y, c)
+	case 2:
 		l.addSmallFish(x, y, c)
 	}
 }
@@ -158,6 +160,14 @@ func (l *Life) addGlider(x, y int, c Cell) {
 	l.a.Set(x+2, y, c)
 	l.a.Set(x+2, y+1, c)
 	l.a.Set(x+1, y+2, c)
+}
+
+func (l *Life) addGliderInv(x, y int, c Cell) {
+	l.a.Set(x, y, c)
+	l.a.Set(x+1, y, c)
+	l.a.Set(x+2, y, c)
+	l.a.Set(x, y-1, c)
+	l.a.Set(x+1, y-2, c)
 }
 
 func (l *Life) addSmallFish(x, y int, c Cell) {
