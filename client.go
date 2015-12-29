@@ -22,13 +22,13 @@ type pkt struct {
 	brightnessLeft  uint8
 	contrastLeft    uint8
 	afterglowLeft   uint8
-	controlDLeft    uint8
+	unknownLeft     uint8
 	trailLeft       [49]byte
 	panelRight      [486]uint8
 	brightnessRight uint8
 	contrastRight   uint8
 	afterglowRight  uint8
-	controlDRight   uint8
+	unknownRight    uint8
 	trailRight      [49]byte
 }
 
@@ -48,8 +48,8 @@ func newPkt() *pkt {
 	p.contrastRight = 128
 	p.afterglowLeft = 80
 	p.afterglowRight = 80
-	p.controlDLeft = 0
-	p.controlDRight = 255
+	p.unknownLeft = 0
+	p.unknownRight = 0
 	return &p
 }
 
