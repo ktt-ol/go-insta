@@ -5,9 +5,8 @@ import (
 	"image/color"
 	"image/color/palette"
 	"image/draw"
+	"math"
 	"strconv"
-
-	"github.com/lucasb-eyer/go-colorful"
 
 	"github.com/ktt-ol/go-insta/life"
 )
@@ -119,13 +118,61 @@ func LifeToScreen(l *life.Life, s *Screen) {
 		for x := 0; x < ScreenWidth; x++ {
 			c := f.Cell(x, y)
 			if c.Alive {
-				c := colorful.Hsv(float64(c.Hue), 0.7, 0.8)
-				s.Set(x, y, color.RGBA{uint8(c.R * 255), uint8(c.G * 255), uint8(c.B * 255), 128})
+				r, g, b := hsvToRgb(float64(c.Hue), 0.7, 0.8)
+				s.Set(x, y, color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 128})
 			} else {
 				s.Set(x, y, color.RGBA{0, 0, 0, 128})
 			}
 		}
 	}
+}
+
+func hsvToRgb(h, s, v float64) (r, g, b float64) {
+	var i int
+	var f, p, q, t float64
+
+	if s == 0 {
+		// achromatic (grey)
+		r = v
+		g = v
+		b = v
+		return
+	}
+
+	h = h / 60 // sector 0 to 5
+	i = int(math.Floor(h))
+	f = h - float64(i) // factorial part of h
+	p = v * (1 - s)
+	q = v * (1 - s*f)
+	t = v * (1 - s*(1-f))
+
+	switch i {
+	case 0:
+		r = v
+		g = t
+		b = p
+	case 1:
+		r = q
+		g = v
+		b = p
+	case 2:
+		r = p
+		g = v
+		b = t
+	case 3:
+		r = p
+		g = q
+		b = v
+	case 4:
+		r = t
+		g = p
+		b = v
+	default: // case 5:
+		r = v
+		g = p
+		b = q
+	}
+	return
 }
 
 func ScreenToImage(s *Screen) image.Image {
