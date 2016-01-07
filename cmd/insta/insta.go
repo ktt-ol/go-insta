@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/comail/colog"
 	"github.com/tarm/serial"
 
 	"github.com/ktt-ol/go-insta"
@@ -28,9 +27,6 @@ func init() {
 }
 
 func main() {
-	colog.Register()
-	colog.ParseFields(true)
-
 	var (
 		fps     = flag.Int("fps", 25, "fps")
 		runLife = flag.Bool("life", false, "life")
