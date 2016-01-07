@@ -57,6 +57,9 @@ func main() {
 	}
 
 	var ser *serial.Port
+
+	var pads func() []insta.Pad
+
 	if *port != "" {
 		cfg := &serial.Config{}
 		cfg.Baud = 57600
@@ -66,10 +69,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		mp := insta.NewMultiPad(ser)
+		pads = mp.Pads
+	} else {
+		kp := insta.NewKeyboardPad()
+		pads = kp.Pads
 	}
-
-	mp := insta.NewMultiPad(ser)
-	mp.Pads()
 
 	c.SetFPS(*fps)
 	go c.Run()
@@ -102,7 +107,7 @@ func main() {
 		s := insta.NewScreen()
 		tr := tron.NewGame(insta.ScreenWidth, insta.ScreenHeight)
 		for {
-			tr.Step(mp.Pads())
+			tr.Step(pads())
 			tr.Paint(s)
 			c.SetScreen(s)
 			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
