@@ -109,8 +109,10 @@ func NewLife(w, h int) *Life {
 		w: w, h: h,
 		add: make(chan struct{}, 50),
 	}
-	l.addSmallFish(10, 10, Cell{Alive: true, Hue: 100})
-	l.addGlider(0, 0, Cell{Alive: true, Hue: 150})
+
+	for i := 0; i < 15; i++ {
+		l.addRandomSpaceship()
+	}
 	return l
 }
 
