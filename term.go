@@ -32,14 +32,17 @@ const asciiGreyscale = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqp
 func (t *Term) print() {
 	t.mu.Lock()
 	defer t.mu.Unlock()
+	if t.screen == nil {
+		return
+	}
 
 	fmt.Print("\033[2J\033[;H")
 	for y := 0; y < t.screen.Bounds().Dy(); y++ {
 		for x := 0; x < t.screen.Bounds().Dx(); x++ {
 			px := t.screen.At(x, y)
 			r, g, b, _ := px.RGBA()
-			v := 0.3*float32(r) + 0.6*float32(g) + 0.11*float32(b)
-			fmt.Print(string(asciiGreyscale[int(v/0xffff*float32(len(asciiGreyscale)))]))
+			v := 0.3*float32(r) + 0.6*float32(g) + 0.1*float32(b)
+			fmt.Print(string(asciiGreyscale[int(v/0xffff*float32(len(asciiGreyscale)-1))]))
 		}
 		fmt.Println()
 	}

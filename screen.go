@@ -45,9 +45,12 @@ func (s *Screen) Copy() *Screen {
 }
 
 func (s *Screen) Set(x, y int, c color.Color) {
+	if x < 0 || y < 0 || x >= ScreenWidth || y >= ScreenHeight {
+		return
+	}
 	rgb := color.RGBA{}
-	if c, ok := c.(color.RGBA); ok {
-		rgb = c
+	if rgba, ok := c.(color.RGBA); ok {
+		rgb = rgba
 	} else {
 		r, g, b, _ := c.RGBA()
 		rgb.R = uint8(r / 256)
