@@ -10,6 +10,7 @@ import (
 
 	"github.com/ktt-ol/go-insta"
 	"github.com/ktt-ol/go-insta/life"
+	"github.com/ktt-ol/go-insta/snake"
 	"github.com/ktt-ol/go-insta/tron"
 )
 
@@ -28,11 +29,12 @@ func init() {
 
 func main() {
 	var (
-		fps     = flag.Int("fps", 25, "fps")
-		runLife = flag.Bool("life", false, "life")
-		runTron = flag.Bool("tron", false, "tron")
-		port    = flag.String("port", "", "serial port")
-		term    = flag.Bool("term", false, "use terminal")
+		fps      = flag.Int("fps", 25, "fps")
+		runLife  = flag.Bool("life", false, "life")
+		runSnake = flag.Bool("snake", false, "snake")
+		runTron  = flag.Bool("tron", false, "tron")
+		port     = flag.String("port", "", "serial port")
+		term     = flag.Bool("term", false, "use terminal")
 	)
 
 	flag.Parse()
@@ -105,6 +107,17 @@ func main() {
 		for {
 			tr.Step(pads())
 			tr.Paint(s)
+			c.SetScreen(s)
+			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+		}
+	}
+
+	if *runSnake {
+		s := insta.NewScreen()
+		sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight)
+		for {
+			sn.Step(pads())
+			sn.Paint(s)
 			c.SetScreen(s)
 			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 		}
