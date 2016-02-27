@@ -29,12 +29,13 @@ func init() {
 
 func main() {
 	var (
-		fps      = flag.Int("fps", 25, "fps")
-		runLife  = flag.Bool("life", false, "life")
-		runSnake = flag.Bool("snake", false, "snake")
-		runTron  = flag.Bool("tron", false, "tron")
-		port     = flag.String("port", "", "serial port")
-		term     = flag.Bool("term", false, "use terminal")
+		fps            = flag.Int("fps", 25, "fps")
+		runLife        = flag.Duration("life", 0, "life")
+		runSnake       = flag.Duration("snake", 0, "snake")
+		runTron        = flag.Duration("tron", 0, "tron")
+		runSpaceflight = flag.Duration("spaceflight", 0, "spaceflight")
+		port           = flag.String("port", "", "serial port")
+		term           = flag.Bool("term", false, "use terminal")
 	)
 
 	flag.Parse()
@@ -50,7 +51,7 @@ func main() {
 		log.Println("connecting to", addrs)
 		c, err = insta.NewInstaClient(addrs)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("unable to connect", err)
 		}
 	}
 
@@ -69,57 +70,70 @@ func main() {
 		}
 		mp := insta.NewMultiPad(ser)
 		pads = mp.Pads
-	} else {
+	} else if *term {
 		kp := insta.NewKeyboardPad()
 		pads = kp.Pads
+	} else {
+		pads = func() []insta.Pad {
+			return nil
+		}
 	}
 
 	c.SetFPS(*fps)
 	go c.Run()
 
-	if *runLife {
-		l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
-		go func() {
-			t := time.Tick(2 * time.Second)
-			for _ = range t {
-				l.AddRandomSpaceship()
-			}
-		}()
+	for {
+		if runLife.Seconds() > 0 {
+			l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
+			go func() {
+				t := time.Tick(2 * time.Second)
+				for _ = range t {
+					l.AddRandomSpaceship()
+				}
+			}()
 
-		s := insta.NewScreen()
-		prev := s.Copy()
-		sps := 10
-		blendSteps := int(float32(*fps) / float32(sps))
-		for {
-			insta.LifeToScreen(l, s)
-			for _, img := range insta.BlendScreens(prev, s, blendSteps) {
-				c.SetScreen(img)
+			s := insta.NewScreen()
+			prev := s.Copy()
+			sps := 10
+			blendSteps := int(float32(*fps) / float32(sps))
+
+			till := time.Now().Add(*runLife)
+			for time.Now().Before(till) {
+				insta.LifeToScreen(l, s)
+				for _, img := range insta.BlendScreens(prev, s, blendSteps) {
+					c.SetScreen(img)
+					time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+				}
+				l.Step()
+				prev, s = s, prev
+			}
+		}
+
+		if runSpaceflight.Seconds() > 0 {
+			insta.Spaceflight(c, *runSpaceflight)
+		}
+
+		if runTron.Seconds() > 0 {
+			s := insta.NewScreen()
+			tr := tron.NewGame(insta.ScreenWidth, insta.ScreenHeight)
+			for {
+				tr.Step(pads())
+				tr.Paint(s)
+				c.SetScreen(s)
 				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 			}
-			l.Step()
-			prev, s = s, prev
 		}
-	}
 
-	if *runTron {
-		s := insta.NewScreen()
-		tr := tron.NewGame(insta.ScreenWidth, insta.ScreenHeight)
-		for {
-			tr.Step(pads())
-			tr.Paint(s)
-			c.SetScreen(s)
-			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+		if runSnake.Seconds() > 0 {
+			s := insta.NewScreen()
+			sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight)
+			for {
+				sn.Step(pads())
+				sn.Paint(s)
+				c.SetScreen(s)
+				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
+			}
 		}
-	}
-
-	if *runSnake {
-		s := insta.NewScreen()
-		sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight)
-		for {
-			sn.Step(pads())
-			sn.Paint(s)
-			c.SetScreen(s)
-			time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
-		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
