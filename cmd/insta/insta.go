@@ -30,10 +30,11 @@ func init() {
 func main() {
 	var (
 		fps            = flag.Int("fps", 25, "fps")
-		runLife        = flag.Duration("life", 0, "life")
-		runSnake       = flag.Duration("snake", 0, "snake")
-		runTron        = flag.Duration("tron", 0, "tron")
-		runSpaceflight = flag.Duration("spaceflight", 0, "spaceflight")
+		runLife        = flag.Duration("life", 0, "run life for duration")
+		runSnake       = flag.Duration("snake", 0, "run snake for duration")
+		runTron        = flag.Duration("tron", 0, "run tron for duration")
+		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
+		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		port           = flag.String("port", "", "serial port")
 		term           = flag.Bool("term", false, "use terminal")
 	)
@@ -83,6 +84,12 @@ func main() {
 	go c.Run()
 
 	for {
+		if *runLogo {
+			c.SetAfterglow(0)
+			insta.ShowImage(c, "img/mainframe-mod.png", time.Second/time.Duration(*fps))
+			c.SetAfterglow(0.4)
+		}
+
 		if runLife.Seconds() > 0 {
 			l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
 			go func() {
@@ -134,6 +141,6 @@ func main() {
 				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 			}
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 	}
 }
