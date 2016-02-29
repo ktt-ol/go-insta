@@ -27,6 +27,9 @@ func (t *Term) SetFPS(fps int) {
 	t.fps = fps
 }
 
+func (t *Term) SetAfterglow(v float64) {
+}
+
 const asciiGreyscale = " .'`^\",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$"
 
 func (t *Term) print() {

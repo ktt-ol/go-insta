@@ -68,6 +68,7 @@ type Client interface {
 	SetScreen(s *Screen)
 	SetFPS(int)
 	Run()
+	SetAfterglow(float64)
 }
 
 type InstaClient struct {
@@ -117,6 +118,17 @@ func (c *InstaClient) SetScreen(s *Screen) {
 	c.mu.Lock()
 	c.screen = s.Copy()
 	c.mu.Unlock()
+}
+
+func (c *InstaClient) SetAfterglow(v float64) {
+	if v < 0 {
+		v = 0
+	}
+	if v > 1 {
+		v = 1
+	}
+	c.dataPkt.afterglowLeft = uint8(v * 255)
+	c.dataPkt.afterglowRight = uint8(v * 255)
 }
 
 func (c *InstaClient) Send() error {
