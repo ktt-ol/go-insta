@@ -3,9 +3,10 @@ package insta
 import (
 	"bytes"
 	"encoding/binary"
+	"image"
+	"image/draw"
 	"log"
 	"net"
-	"sync"
 	"time"
 
 	"fmt"
@@ -75,15 +76,14 @@ type InstaClient struct {
 	syncSock   *net.UDPConn
 	dataSock   *net.UDPConn
 	panelAddrs []*net.UDPAddr
-	syncPkt    *syncPkt
+	syncBytes  []byte
 	dataPkt    *pkt
-	screen     *Screen
+	imgs       chan image.Image
 	fps        int
-	mu         *sync.Mutex
 }
 
 func NewInstaClient(addrs []string) (*InstaClient, error) {
-	c := InstaClient{mu: &sync.Mutex{}, fps: 50}
+	c := InstaClient{imgs: make(chan image.Image, 1), fps: 50}
 	if len(addrs) != PanelsX*PanelsY {
 		return nil, fmt.Errorf("invalid number of addresses, got %d for %dx%d panels",
 			len(addrs), PanelsX, PanelsY)
@@ -109,15 +109,21 @@ func NewInstaClient(addrs []string) (*InstaClient, error) {
 		return nil, err
 	}
 
-	c.syncPkt = newSyncPkt()
+	buf := new(bytes.Buffer)
+	syncPkt := newSyncPkt()
+	if err := binary.Write(buf, binary.LittleEndian, syncPkt); err != nil {
+		return nil, err
+	}
+	c.syncBytes = buf.Bytes()
 	c.dataPkt = newPkt()
 	return &c, nil
 }
 
 func (c *InstaClient) SetScreen(s *Screen) {
-	c.mu.Lock()
-	c.screen = s.Copy()
-	c.mu.Unlock()
+	select {
+	case c.imgs <- s.Copy():
+	default: // skip screen
+	}
 }
 
 func (c *InstaClient) SetAfterglow(v float64) {
@@ -131,42 +137,30 @@ func (c *InstaClient) SetAfterglow(v float64) {
 	c.dataPkt.afterglowRight = uint8(v * 255)
 }
 
-func (c *InstaClient) Send() error {
-	if c.screen == nil {
-		return nil
-	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *InstaClient) send(img image.Image) error {
+	scr := NewScreen() // TODO, create image2panel function
+	draw.Draw(scr, scr.Bounds(), img, image.ZP, draw.Over)
+
 	i := 0
 	buf := new(bytes.Buffer)
 	for y := 0; y < PanelsY; y++ {
 		for x := 0; x < PanelsX; x++ {
-			c.dataPkt.panelLeft, c.dataPkt.panelRight = c.screen.Panel(x, y)
+			c.dataPkt.panelLeft, c.dataPkt.panelRight = scr.Panel(x, y)
 			err := binary.Write(buf, binary.LittleEndian, c.dataPkt)
 			if err != nil {
 				return err
 			}
-			n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			if err != nil {
-				return err
-			}
-			if n != buf.Len() {
-				return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
-			}
+			c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			// n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			// if err != nil {
+			// 	return err
+			// }
+			// if n != buf.Len() {
+			// 	return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
+			// }
 			buf.Reset()
 			i += 1
 		}
-	}
-	if err := binary.Write(buf, binary.LittleEndian, c.syncPkt); err != nil {
-		return err
-	}
-
-	n, err := c.syncSock.Write(buf.Bytes())
-	if err != nil {
-		return err
-	}
-	if n != buf.Len() {
-		return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
 	}
 
 	return nil
@@ -179,13 +173,35 @@ func (c *InstaClient) SetFPS(fps int) {
 	c.fps = fps
 }
 
+func (c *InstaClient) sync() error {
+	n, err := c.syncSock.Write(c.syncBytes)
+	if err != nil {
+		return err
+	}
+	if n != len(c.syncBytes) {
+		return fmt.Errorf("not all bytes sent: %d of %d", n, len(c.syncBytes))
+	}
+	return nil
+}
+
 func (c *InstaClient) Run() {
-	t := time.Tick(time.Duration(1000.0/float32(c.fps)) * time.Millisecond)
-	for _ = range t {
-		if err := c.Send(); err != nil {
+	dur := time.Duration(1000/float64(c.fps)) * time.Millisecond
+	start := time.Now()
+	for img := range c.imgs {
+		sendStart := time.Now()
+		if err := c.send(img); err != nil {
 			log.Printf("error: while sending packages: %v", err)
 			time.Sleep(time.Second)
+		} else {
+			end := time.Now()
+			wait := time.Duration(dur.Nanoseconds()-end.Sub(start).Nanoseconds()) * time.Nanosecond
+			fmt.Println(start, end, wait, end.Sub(start), sendStart.Sub(start))
+			time.Sleep(wait)
+			if err := c.sync(); err != nil {
+				log.Printf("error: while sending packages: %v", err)
+			}
 		}
+		start = time.Now()
 	}
 }
 
