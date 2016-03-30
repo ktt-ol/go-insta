@@ -7,8 +7,6 @@ import (
 	"image/draw"
 	"math"
 	"strconv"
-
-	"github.com/ktt-ol/go-insta/life"
 )
 
 const (
@@ -115,22 +113,7 @@ func (s *Screen) Panel(x, y int) ([486]uint8, [486]uint8) {
 	return l, r
 }
 
-func LifeToScreen(l *life.Life, s *Screen) {
-	f := l.Field()
-	for y := 0; y < ScreenHeight; y++ {
-		for x := 0; x < ScreenWidth; x++ {
-			c := f.Cell(x, y)
-			if c.Alive {
-				r, g, b := hsvToRgb(float64(c.Hue), 0.7, 0.8)
-				s.Set(x, y, color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 128})
-			} else {
-				s.Set(x, y, color.RGBA{0, 0, 0, 128})
-			}
-		}
-	}
-}
-
-func hsvToRgb(h, s, v float64) (r, g, b float64) {
+func HsvToRgb(h, s, v float64) (r, g, b float64) {
 	var i int
 	var f, p, q, t float64
 

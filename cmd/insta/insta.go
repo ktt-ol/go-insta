@@ -120,7 +120,7 @@ func main() {
 
 			till := time.Now().Add(*runLife)
 			for time.Now().Before(till) {
-				insta.LifeToScreen(l, s)
+				l.UpdateScreen(s)
 				for _, img := range insta.BlendScreens(prev, s, blendSteps) {
 					c.SetScreen(img)
 				}

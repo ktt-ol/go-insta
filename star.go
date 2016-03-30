@@ -57,7 +57,7 @@ func Spaceflight(c Client, duration time.Duration) {
 					brightness = 1.0
 				}
 
-				r, g, b := hsvToRgb(float64(s.hue), saturation, brightness)
+				r, g, b := HsvToRgb(float64(s.hue), saturation, brightness)
 				scr.Set(int(s.x), int(s.y), color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 128})
 			}
 			stars[i] = s

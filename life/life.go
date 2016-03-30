@@ -6,8 +6,11 @@ package life
 
 import (
 	"bytes"
+	"image/color"
 	"math"
 	"math/rand"
+
+	"github.com/ktt-ol/go-insta"
 )
 
 type Cell struct {
@@ -198,4 +201,19 @@ func (l *Life) String() string {
 		buf.WriteByte('\n')
 	}
 	return buf.String()
+}
+
+func (l *Life) UpdateScreen(s *insta.Screen) {
+	f := l.Field()
+	for y := 0; y < insta.ScreenHeight; y++ {
+		for x := 0; x < insta.ScreenWidth; x++ {
+			c := f.Cell(x, y)
+			if c.Alive {
+				r, g, b := insta.HsvToRgb(float64(c.Hue), 0.7, 0.8)
+				s.Set(x, y, color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 128})
+			} else {
+				s.Set(x, y, color.RGBA{0, 0, 0, 128})
+			}
+		}
+	}
 }
