@@ -27,13 +27,25 @@ func ShowImage(c Client, fname string, dur time.Duration) {
 	img = resize.Resize(0, ScreenHeight, img, resize.Bilinear)
 
 	steps := img.Bounds().Dx() + ScreenWidth + 1
+	syncAt := time.Now()
 	for i := 0; i < steps; i++ {
-		start := time.Now()
 		scr := NewScreen()
 		bnds := image.Rect(ScreenWidth-i, 0, ScreenWidth, ScreenHeight)
 		draw.Draw(scr, bnds, img, image.ZP, draw.Over)
-		end := time.Now()
-		time.Sleep(time.Duration(dur.Nanoseconds()-end.Sub(start).Nanoseconds()) * time.Nanosecond)
-		c.SetScreen(scr)
+
+		// wait till previous frame was synced, in case we are to fast
+		if syncAt.After(time.Now()) {
+			time.Sleep(syncAt.Sub(time.Now()))
+		}
+
+		// step syncAt time for next frame
+		syncAt = syncAt.Add(dur)
+
+		// is next frame in the past? forward to next syncAt in the future
+		for syncAt.Before(time.Now()) {
+			log.Println("dropped frame")
+			syncAt = syncAt.Add(dur)
+		}
+		c.SetScreenAt(scr, syncAt)
 	}
 }

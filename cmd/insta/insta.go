@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/tarm/serial"
@@ -35,6 +37,11 @@ func init() {
 }
 
 func main() {
+
+	go func() {
+		log.Println(http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	var (
 		fps            = flag.Int("fps", 25, "fps")
 		runLife        = flag.Duration("life", 0, "run life for duration")
@@ -93,7 +100,7 @@ func main() {
 	for {
 		if *runLogo {
 			c.SetAfterglow(0)
-			insta.ShowImage(c, "img/mainframe-mod.png", 25*time.Millisecond) // time.Second/time.Duration(*fps))
+			insta.ShowImage(c, "img/mainframe-mod.png", time.Second/time.Duration(*fps))
 			c.SetAfterglow(0.4)
 		}
 

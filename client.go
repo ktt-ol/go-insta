@@ -67,9 +67,15 @@ func newSyncPkt() *syncPkt {
 
 type Client interface {
 	SetScreen(s *Screen)
+	SetScreenAt(s *Screen, t time.Time)
 	SetFPS(int)
 	Run()
 	SetAfterglow(float64)
+}
+
+type syncedImage struct {
+	image  image.Image
+	syncAt time.Time
 }
 
 type InstaClient struct {
@@ -78,12 +84,12 @@ type InstaClient struct {
 	panelAddrs []*net.UDPAddr
 	syncBytes  []byte
 	dataPkt    *pkt
-	imgs       chan image.Image
+	imgs       chan syncedImage
 	fps        int
 }
 
 func NewInstaClient(addrs []string) (*InstaClient, error) {
-	c := InstaClient{imgs: make(chan image.Image, 1), fps: 50}
+	c := InstaClient{imgs: make(chan syncedImage, 1), fps: 50}
 	if len(addrs) != PanelsX*PanelsY {
 		return nil, fmt.Errorf("invalid number of addresses, got %d for %dx%d panels",
 			len(addrs), PanelsX, PanelsY)
@@ -121,7 +127,14 @@ func NewInstaClient(addrs []string) (*InstaClient, error) {
 
 func (c *InstaClient) SetScreen(s *Screen) {
 	select {
-	case c.imgs <- s.Copy():
+	case c.imgs <- syncedImage{image: s.Copy(), syncAt: time.Now()}:
+	default: // skip screen
+	}
+}
+
+func (c *InstaClient) SetScreenAt(s *Screen, t time.Time) {
+	select {
+	case c.imgs <- syncedImage{image: s.Copy(), syncAt: t}:
 	default: // skip screen
 	}
 }
@@ -150,14 +163,13 @@ func (c *InstaClient) send(img image.Image) error {
 			if err != nil {
 				return err
 			}
-			c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			// n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			// if err != nil {
-			// 	return err
-			// }
-			// if n != buf.Len() {
-			// 	return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
-			// }
+			n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			if err != nil {
+				return err
+			}
+			if n != buf.Len() {
+				return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
+			}
 			buf.Reset()
 			i += 1
 		}
@@ -185,23 +197,16 @@ func (c *InstaClient) sync() error {
 }
 
 func (c *InstaClient) Run() {
-	dur := time.Duration(1000/float64(c.fps)) * time.Millisecond
-	start := time.Now()
-	for img := range c.imgs {
-		sendStart := time.Now()
-		if err := c.send(img); err != nil {
+	for syncedImg := range c.imgs {
+		if err := c.send(syncedImg.image); err != nil {
 			log.Printf("error: while sending packages: %v", err)
 			time.Sleep(time.Second)
-		} else {
-			end := time.Now()
-			wait := time.Duration(dur.Nanoseconds()-end.Sub(start).Nanoseconds()) * time.Nanosecond
-			fmt.Println(start, end, wait, end.Sub(start), sendStart.Sub(start))
-			time.Sleep(wait)
-			if err := c.sync(); err != nil {
-				log.Printf("error: while sending packages: %v", err)
-			}
 		}
-		start = time.Now()
+		wait := syncedImg.syncAt.Sub(time.Now())
+		time.Sleep(wait)
+		if err := c.sync(); err != nil {
+			log.Printf("error: while sending packages: %v", err)
+		}
 	}
 }
 

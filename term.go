@@ -23,6 +23,13 @@ func (t *Term) SetScreen(s *Screen) {
 	}
 }
 
+func (t *Term) SetScreenAt(s *Screen, _ time.Time) {
+	select {
+	case t.imgs <- s.Copy():
+	default: // skip screen
+	}
+}
+
 func (t *Term) SetFPS(fps int) {
 	t.fps = fps
 }
