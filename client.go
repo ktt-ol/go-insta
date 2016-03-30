@@ -171,14 +171,13 @@ func (c *InstaClient) send(img image.Image) error {
 			if err != nil {
 				return err
 			}
-			c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			// n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			// if err != nil {
-			// 	return err
-			// }
-			// if n != buf.Len() {
-			// 	return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
-			// }
+			n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			if err != nil {
+				return err
+			}
+			if n != buf.Len() {
+				return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
+			}
 			buf.Reset()
 			i += 1
 		}
