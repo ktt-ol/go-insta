@@ -3,12 +3,14 @@ package insta
 import (
 	"fmt"
 	"image"
+	"log"
 	"time"
 )
 
 type Term struct {
-	imgs chan image.Image
-	fps  int
+	imgs     chan image.Image
+	fps      int
+	nextSync time.Time
 }
 
 func NewTerm() *Term {
@@ -17,13 +19,21 @@ func NewTerm() *Term {
 }
 
 func (t *Term) SetScreen(s *Screen) {
-	select {
-	case t.imgs <- s.Copy():
-	default: // skip screen
+	dur := time.Second / time.Duration(t.fps)
+	// wait till previous frame was synced, in case we are to fast
+	if t.nextSync.After(time.Now()) {
+		time.Sleep(t.nextSync.Sub(time.Now()))
 	}
-}
 
-func (t *Term) SetScreenAt(s *Screen, _ time.Time) {
+	// step t.nextSync time for next frame
+	t.nextSync = t.nextSync.Add(dur)
+
+	// is next frame in the past? forward to next t.nextSync in the future
+	if t.nextSync.Before(time.Now()) {
+		log.Println("dropped frame")
+		t.nextSync = time.Now().Add(dur)
+	}
+
 	select {
 	case t.imgs <- s.Copy():
 	default: // skip screen

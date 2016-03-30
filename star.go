@@ -63,7 +63,6 @@ func Spaceflight(c Client, duration time.Duration) {
 			stars[i] = s
 		}
 		c.SetScreen(scr)
-		time.Sleep(40 * time.Millisecond)
 		if alive == 0 {
 			break
 		}

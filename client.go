@@ -66,8 +66,7 @@ func newSyncPkt() *syncPkt {
 }
 
 type Client interface {
-	SetScreen(s *Screen)
-	SetScreenAt(s *Screen, t time.Time)
+	SetScreen(*Screen)
 	SetFPS(int)
 	Run()
 	SetAfterglow(float64)
@@ -86,6 +85,7 @@ type InstaClient struct {
 	dataPkt    *pkt
 	imgs       chan syncedImage
 	fps        int
+	nextSync   time.Time
 }
 
 func NewInstaClient(addrs []string) (*InstaClient, error) {
@@ -126,15 +126,23 @@ func NewInstaClient(addrs []string) (*InstaClient, error) {
 }
 
 func (c *InstaClient) SetScreen(s *Screen) {
-	select {
-	case c.imgs <- syncedImage{image: s.Copy(), syncAt: time.Now()}:
-	default: // skip screen
+	dur := time.Second / time.Duration(c.fps)
+	// wait till previous frame was synced, in case we are to fast
+	if c.nextSync.After(time.Now()) {
+		time.Sleep(c.nextSync.Sub(time.Now()))
 	}
-}
 
-func (c *InstaClient) SetScreenAt(s *Screen, t time.Time) {
+	// step c.nextSync time for next frame
+	c.nextSync = c.nextSync.Add(dur)
+
+	// is next frame in the past? forward to next c.nextSync in the future
+	if c.nextSync.Before(time.Now()) {
+		log.Println("dropped frame")
+		c.nextSync = time.Now().Add(dur)
+	}
+
 	select {
-	case c.imgs <- syncedImage{image: s.Copy(), syncAt: t}:
+	case c.imgs <- syncedImage{image: s.Copy(), syncAt: c.nextSync}:
 	default: // skip screen
 	}
 }
@@ -163,13 +171,14 @@ func (c *InstaClient) send(img image.Image) error {
 			if err != nil {
 				return err
 			}
-			n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
-			if err != nil {
-				return err
-			}
-			if n != buf.Len() {
-				return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
-			}
+			c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			// n, err := c.dataSock.WriteTo(buf.Bytes(), c.panelAddrs[i])
+			// if err != nil {
+			// 	return err
+			// }
+			// if n != buf.Len() {
+			// 	return fmt.Errorf("not all bytes sent: %d of %d", n, buf.Len())
+			// }
 			buf.Reset()
 			i += 1
 		}
@@ -179,7 +188,7 @@ func (c *InstaClient) send(img image.Image) error {
 }
 
 func (c *InstaClient) SetFPS(fps int) {
-	if fps < 0 || fps > 100 {
+	if fps < 0 {
 		fps = 50
 	}
 	c.fps = fps

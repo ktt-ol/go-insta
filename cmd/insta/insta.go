@@ -100,7 +100,7 @@ func main() {
 	for {
 		if *runLogo {
 			c.SetAfterglow(0)
-			insta.ShowImage(c, "img/mainframe-mod.png", time.Second/time.Duration(*fps))
+			insta.ShowImage(c, "img/mainframe-mod.png")
 			c.SetAfterglow(0.4)
 		}
 
@@ -123,7 +123,6 @@ func main() {
 				insta.LifeToScreen(l, s)
 				for _, img := range insta.BlendScreens(prev, s, blendSteps) {
 					c.SetScreen(img)
-					time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 				}
 				l.Step()
 				prev, s = s, prev
@@ -141,7 +140,6 @@ func main() {
 				tr.Step(pads())
 				tr.Paint(s)
 				c.SetScreen(s)
-				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 			}
 		}
 
@@ -152,7 +150,6 @@ func main() {
 				sn.Step(pads())
 				sn.Paint(s)
 				c.SetScreen(s)
-				time.Sleep(1000 / time.Duration(*fps) * time.Millisecond)
 			}
 		}
 		time.Sleep(20 * time.Millisecond)
