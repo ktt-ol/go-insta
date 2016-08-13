@@ -10,6 +10,7 @@ import (
 
 type Piece struct {
 	X, Y  int
+	Set   bool
 	Color color.RGBA
 }
 
@@ -62,6 +63,9 @@ func NewGame(w, h int) *Game {
 	for i := range f {
 		f[i] = make([]Cell, w)
 	}
+	f[10][20].Fruit = true
+	f[20][10].Fruit = true
+	f[30][30].Fruit = true
 	g := &Game{
 		Field:  f,
 		Width:  w,
@@ -71,9 +75,10 @@ func NewGame(w, h int) *Game {
 				Color: color.RGBA{255, 255, 0, 255},
 				X:     insta.ScreenWidth / 2,
 				Y:     insta.ScreenHeight / 2,
+				Set:   true,
 			},
 			Dir:  Down,
-			Tail: make([]Piece, 10),
+			Tail: make([]Piece, 20),
 		},
 	}
 	return g
@@ -118,18 +123,30 @@ func (g *Game) Step(pads []insta.Pad) {
 	}
 
 	g.move()
-	// if g.Field.f[g.Player.Head.Y][g.Player.Head.X].Set {
-	// 	g.Field.Clear()
-	// 	for _, p := range g.Players {
-	// 		g.Player.Dir = None
-	// 	}
-	// 	return
-	// }
 
-	c := g.Field[g.Player.Head.Y][g.Player.Head.X]
+	p := g.Player.Tail[len(g.Player.Tail)-1]
+	if p.Set {
+		g.Field[p.Y][p.X].Snake = false
+	}
+	copy(g.Player.Tail[1:], g.Player.Tail)
+	g.Player.Tail[0] = g.Player.Head
+
+	h := g.Player.Head
+	if g.Field[h.Y][h.X].Snake {
+		g.clear()
+		g.Player.Dir = None
+		return
+	} else if g.Field[h.Y][h.X].Fruit {
+		g.Field[h.Y][h.X].Fruit = false
+		oldtail := g.Player.Tail
+		g.Player.Tail = make([]Piece, len(oldtail)+10)
+		copy(g.Player.Tail, oldtail)
+	}
+
+	c := g.Field[h.Y][h.X]
 	c.Snake = true
-	c.Color = g.Player.Head.Color
-	g.Field[g.Player.Head.Y][g.Player.Head.X] = c
+	c.Color = h.Color
+	g.Field[h.Y][h.X] = c
 }
 
 func (g *Game) Paint(img draw.Image) {
@@ -137,6 +154,8 @@ func (g *Game) Paint(img draw.Image) {
 		for x := range g.Field[y] {
 			if g.Field[y][x].Snake {
 				img.Set(x, y, g.Field[y][x].Color)
+			} else if g.Field[y][x].Fruit {
+				img.Set(x, y, color.White)
 			} else {
 				img.Set(x, y, color.RGBA{0, 0, 0, 0})
 			}
