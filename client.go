@@ -67,6 +67,7 @@ func newSyncPkt() *syncPkt {
 
 type Client interface {
 	SetScreen(*Screen)
+	SetScreenImmediate(*Screen)
 	SetFPS(int)
 	Run()
 	SetAfterglow(float64)
@@ -147,6 +148,13 @@ func (c *InstaClient) SetScreen(s *Screen) {
 	}
 }
 
+func (c *InstaClient) SetScreenImmediate(s *Screen) {
+	select {
+	case c.imgs <- syncedImage{image: s.Copy()}:
+	default: // skip screen
+	}
+}
+
 func (c *InstaClient) SetAfterglow(v float64) {
 	if v < 0 {
 		v = 0
@@ -210,8 +218,10 @@ func (c *InstaClient) Run() {
 			log.Printf("error: while sending packages: %v", err)
 			time.Sleep(time.Second)
 		}
-		wait := syncedImg.syncAt.Sub(time.Now())
-		time.Sleep(wait)
+		if !syncedImg.syncAt.IsZero() {
+			wait := syncedImg.syncAt.Sub(time.Now())
+			time.Sleep(wait)
+		}
 		if err := c.sync(); err != nil {
 			log.Printf("error: while sending packages: %v", err)
 		}

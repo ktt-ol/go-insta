@@ -50,6 +50,7 @@ func main() {
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		port           = flag.String("port", "", "serial port")
+		joystick       = flag.Int("joystick", -1, "joystick id")
 		term           = flag.Bool("term", false, "use terminal")
 	)
 
@@ -87,6 +88,9 @@ func main() {
 		pads = mp.Pads
 	} else if *term {
 		kp := insta.NewKeyboardPad()
+		pads = kp.Pads
+	} else if *joystick >= 0 {
+		kp := insta.NewJoystick(*joystick)
 		pads = kp.Pads
 	} else {
 		pads = func() []insta.Pad {
@@ -139,7 +143,8 @@ func main() {
 			for {
 				tr.Step(pads())
 				tr.Paint(s)
-				c.SetScreen(s)
+				c.SetScreenImmediate(s)
+				time.Sleep(50 * time.Microsecond)
 			}
 		}
 
