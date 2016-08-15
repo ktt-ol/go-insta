@@ -101,6 +101,8 @@ func main() {
 	c.SetFPS(*fps)
 	go c.Run()
 
+	c.SetAfterglow(0.3)
+
 	for {
 		if *runLogo {
 			c.SetAfterglow(0)
@@ -149,17 +151,28 @@ func main() {
 		}
 
 		if runSnake.Seconds() > 0 {
-			s := insta.NewScreen()
-			sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight)
-			time.Sleep(1 * time.Second)
+			c.SetAfterglow(0.2)
+		SnakeLoop:
 			for {
-				next := sn.Step(pads())
-				sn.Paint(s)
-				c.SetScreenImmediate(s)
-				if !next {
-					break
+				s := insta.NewScreen()
+				sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight, *runSnake)
+				for {
+					status := sn.Step(pads())
+					sn.Paint(s)
+					c.SetScreenImmediate(s)
+					if status == snake.End {
+						time.Sleep(100 * time.Millisecond) // prevent screen from being dropped
+						sn.PaintScore(s)
+						c.SetScreenImmediate(s)
+						time.Sleep(3 * time.Second)
+						break
+					}
+					if status == snake.Exit {
+						break SnakeLoop
+					}
 				}
 			}
+			c.SetAfterglow(0.3)
 		}
 		time.Sleep(20 * time.Millisecond)
 	}

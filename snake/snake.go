@@ -1,13 +1,19 @@
 package snake
 
 import (
+	"fmt"
+	"image"
+	"image/color"
 	"image/draw"
 	"math/rand"
 	"time"
 
+	"golang.org/x/image/font/basicfont"
+
 	"github.com/ktt-ol/go-insta"
 
-	"image/color"
+	"golang.org/x/image/font"
+	"golang.org/x/image/math/fixed"
 )
 
 type Piece struct {
@@ -77,20 +83,33 @@ type Game struct {
 	Field         Field
 	Player        Player
 	tickDur       time.Duration
+	idleTime      time.Time
+	ExitAfterIdle time.Duration
 }
 
-func NewGame(w, h int) *Game {
+type GameStatus int
+
+const (
+	Running GameStatus = iota
+	End
+	Exit
+)
+
+func NewGame(w, h int, exitAfterIdle time.Duration) *Game {
 	f := make([][]Cell, h)
 	for i := range f {
 		f[i] = make([]Cell, w)
 	}
-	f[10][20].Fruit = true
-	f[10][20].Color = insta.HsvToColor(rand.Float64()*360, 0.8, 0.5)
-	f[20][10].Fruit = true
-	f[20][10].Color = insta.HsvToColor(rand.Float64()*360, 0.8, 0.5)
-	f[30][30].Fruit = true
-	f[30][30].Color = insta.HsvToColor(rand.Float64()*360, 0.8, 0.5)
 
+	dir := Down
+	switch rand.Intn(4) {
+	case 0:
+		dir = Up
+	case 1:
+		dir = Left
+	case 2:
+		dir = Right
+	}
 	g := &Game{
 		Field:  f,
 		Width:  w,
@@ -102,12 +121,18 @@ func NewGame(w, h int) *Game {
 				Y:     insta.ScreenHeight / 2,
 				Set:   true,
 			},
-			Dir: Down,
-			// Tail: make([]Piece, 20),
+			Dir:    dir,
 			Length: 10,
 		},
-		tickDur: time.Millisecond * 50,
+		tickDur:       time.Millisecond * 50,
+		idleTime:      time.Now().Add(exitAfterIdle),
+		ExitAfterIdle: exitAfterIdle,
 	}
+
+	g.SpawnFruit()
+	g.SpawnFruit()
+	g.SpawnFruit()
+
 	return g
 }
 
@@ -135,23 +160,35 @@ func (g *Game) move() {
 	g.Player.Head.Y %= g.Height
 }
 
-func (g *Game) Step(pads []insta.Pad) bool {
+func (g *Game) Step(pads []insta.Pad) GameStatus {
 	time.Sleep(g.tickDur)
-	if pads[0].Up() && g.Player.Dir != Down {
+
+	moved := false
+	prev := g.Player.Dir
+	if pads[0].Up() && prev != Down {
 		g.Player.Dir = Up
+		moved = true
 	}
-	if pads[0].Down() && g.Player.Dir != Up {
+	if pads[0].Down() && prev != Up {
 		g.Player.Dir = Down
+		moved = true
 	}
-	if pads[0].Left() && g.Player.Dir != Right {
+	if pads[0].Left() && prev != Right {
 		g.Player.Dir = Left
+		moved = true
 	}
-	if pads[0].Right() && g.Player.Dir != Left {
+	if pads[0].Right() && prev != Left {
 		g.Player.Dir = Right
+		moved = true
+	}
+	if moved {
+		g.idleTime = time.Now().Add(g.ExitAfterIdle)
+	} else if g.idleTime.Before(time.Now()) {
+		return Exit
 	}
 
 	if pads[0].Start() {
-		return false
+		return End
 	}
 
 	g.move()
@@ -165,7 +202,7 @@ func (g *Game) Step(pads []insta.Pad) bool {
 	if g.Field[h.Y][h.X].Snake {
 		g.clear()
 		g.Player.Dir = None
-		return false
+		return End
 	} else if g.Field[h.Y][h.X].Fruit {
 		g.Field[h.Y][h.X].Fruit = false
 		g.Player.Head.Color = g.Field[h.Y][h.X].Color
@@ -180,7 +217,7 @@ func (g *Game) Step(pads []insta.Pad) bool {
 	c.Snake = true
 	c.Color = h.Color
 	g.Field[h.Y][h.X] = c
-	return true
+	return Running
 }
 
 func (g *Game) SpawnFruit() {
@@ -209,4 +246,19 @@ func (g *Game) Paint(img draw.Image) {
 	for _, t := range g.Player.Tail {
 		img.Set(t.X, t.Y, t.Color)
 	}
+}
+
+func (g *Game) PaintScore(img draw.Image) {
+	fontWidth := 7
+	fontHeight := 13
+
+	text := fmt.Sprintf("%d", g.Player.Length)
+
+	d := &font.Drawer{
+		Dst:  img,
+		Src:  image.White,
+		Face: basicfont.Face7x13,
+		Dot:  fixed.P(insta.ScreenWidth/2-fontWidth, insta.ScreenHeight/2+fontHeight/2),
+	}
+	d.DrawString(text)
 }
