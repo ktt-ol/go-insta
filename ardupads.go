@@ -68,10 +68,11 @@ func (m *MultiPad) Pads() []Pad {
 	pads := make([]Pad, 4)
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	copy(pads[0][:], m.buf[1+6*0:6*0+6+1])
-	copy(pads[1][:], m.buf[1+6*1:6*1+6+1])
-	copy(pads[2][:], m.buf[1+6*2:6*2+6+1])
-	copy(pads[3][:], m.buf[1+6*3:6*3+6+1])
+	for i := range pads {
+		pad := PSController{}
+		copy(pad[:], m.buf[1+6*i:6*i+6+1])
+		pads[0] = &pad
+	}
 	return pads
 }
 
@@ -124,34 +125,54 @@ const (
 	PsMaskSquare   = 0x80
 )
 
-type Pad [6]byte
+type Pad interface {
+	Up() bool
+	Down() bool
+	Left() bool
+	Right() bool
 
-func (p Pad) Up() bool    { return (p[0] & PsMaskUp) != 0 }
-func (p Pad) Right() bool { return (p[0] & PsMaskRight) != 0 }
-func (p Pad) Down() bool  { return (p[0] & PsMaskDown) != 0 }
-func (p Pad) Left() bool  { return (p[0] & PsMaskLeft) != 0 }
+	Start() bool
+	Select() bool
 
-func (p Pad) Select() bool { return (p[0] & PsMaskSelect) != 0 }
-func (p Pad) Start() bool  { return (p[0] & PsMaskStart) != 0 }
+	South() bool
+	East() bool
+	North() bool
+	West() bool
+}
 
-func (p Pad) R1() bool { return (p[1] & PsMaskR1) != 0 }
-func (p Pad) R2() bool { return (p[1] & PsMaskR2) != 0 }
-func (p Pad) L1() bool { return (p[1] & PsMaskL1) != 0 }
-func (p Pad) L2() bool { return (p[1] & PsMaskL2) != 0 }
+type PSController [6]byte
 
-func (p Pad) Triangle() bool { return (p[1] & PsMaskTriangle) != 0 }
-func (p Pad) Circle() bool   { return (p[1] & PsMaskCircle) != 0 }
-func (p Pad) Cross() bool    { return (p[1] & PsMaskCross) != 0 }
-func (p Pad) Square() bool   { return (p[1] & PsMaskSquare) != 0 }
+func (p *PSController) Up() bool    { return (p[0] & PsMaskUp) != 0 }
+func (p *PSController) Right() bool { return (p[0] & PsMaskRight) != 0 }
+func (p *PSController) Down() bool  { return (p[0] & PsMaskDown) != 0 }
+func (p *PSController) Left() bool  { return (p[0] & PsMaskLeft) != 0 }
 
-func (p Pad) StickRight() (float32, float32) {
+func (p *PSController) Select() bool { return (p[0] & PsMaskSelect) != 0 }
+func (p *PSController) Start() bool  { return (p[0] & PsMaskStart) != 0 }
+
+func (p *PSController) R1() bool { return (p[1] & PsMaskR1) != 0 }
+func (p *PSController) R2() bool { return (p[1] & PsMaskR2) != 0 }
+func (p *PSController) L1() bool { return (p[1] & PsMaskL1) != 0 }
+func (p *PSController) L2() bool { return (p[1] & PsMaskL2) != 0 }
+
+func (p *PSController) Triangle() bool { return (p[1] & PsMaskTriangle) != 0 }
+func (p *PSController) Circle() bool   { return (p[1] & PsMaskCircle) != 0 }
+func (p *PSController) Cross() bool    { return (p[1] & PsMaskCross) != 0 }
+func (p *PSController) Square() bool   { return (p[1] & PsMaskSquare) != 0 }
+
+func (p *PSController) North() bool { return (p[1] & PsMaskTriangle) != 0 }
+func (p *PSController) East() bool  { return (p[1] & PsMaskCircle) != 0 }
+func (p *PSController) South() bool { return (p[1] & PsMaskCross) != 0 }
+func (p *PSController) West() bool  { return (p[1] & PsMaskSquare) != 0 }
+
+func (p *PSController) StickRight() (float32, float32) {
 	return (float32(p[2]) - 128) / 128, (float32(p[3]) - 128) / 128
 }
-func (p Pad) StickLeft() (float32, float32) {
+func (p *PSController) StickLeft() (float32, float32) {
 	return (float32(p[4]) - 128) / 128, (float32(p[5]) - 128) / 128
 }
 
-func (p *Pad) String() string {
+func (p *PSController) String() string {
 	b := bytes.Buffer{}
 	if p.Up() {
 		b.WriteString("u ")

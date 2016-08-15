@@ -161,6 +161,10 @@ func HsvToRgb(h, s, v float64) (r, g, b float64) {
 	return
 }
 
+func HsvToColor(h, s, v float64) color.RGBA {
+	r, g, b := HsvToRgb(h, s, v)
+	return color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 255}
+}
 func ScreenToImage(s *Screen) image.Image {
 	dst := image.NewRGBA(s.Bounds())
 	// draw.DrawMask(dst, dst.Bounds(), s, image.ZP, s, image.ZP, draw.Over)

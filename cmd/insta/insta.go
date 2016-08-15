@@ -151,10 +151,14 @@ func main() {
 		if runSnake.Seconds() > 0 {
 			s := insta.NewScreen()
 			sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight)
+			time.Sleep(1 * time.Second)
 			for {
-				sn.Step(pads())
+				next := sn.Step(pads())
 				sn.Paint(s)
-				c.SetScreen(s)
+				c.SetScreenImmediate(s)
+				if !next {
+					break
+				}
 			}
 		}
 		time.Sleep(20 * time.Millisecond)

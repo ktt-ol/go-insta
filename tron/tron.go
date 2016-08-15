@@ -108,16 +108,16 @@ func (f *Field) movePos(p Pos, d Direction) Pos {
 
 func (g *Game) Step(pads []insta.Pad) {
 	for i, p := range g.Players {
-		if pads[i].Up() || pads[i].Triangle() {
+		if pads[i].Up() {
 			p.Dir = Up
 		}
-		if pads[i].Down() || pads[i].Cross() {
+		if pads[i].Down() {
 			p.Dir = Down
 		}
-		if pads[i].Left() || pads[i].Square() {
+		if pads[i].Left() {
 			p.Dir = Left
 		}
-		if pads[i].Right() || pads[i].Circle() {
+		if pads[i].Right() {
 			p.Dir = Right
 		}
 

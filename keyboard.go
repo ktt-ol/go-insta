@@ -58,31 +58,35 @@ func (m *KeyboardPad) Pads() []Pad {
 }
 
 func byteToPad(b byte) []Pad {
-	ps := make([]Pad, 4)
+	pad0 := PSController{}
+	pad1 := PSController{}
 
 	switch b {
 	case 'q':
-		ps[0][1] = PsMaskSquare
+		pad0[1] = PsMaskSquare
 	case 'w':
-		ps[0][0] = PsMaskUp
+		pad0[0] = PsMaskUp
 	case 's':
-		ps[0][0] = PsMaskDown
+		pad0[0] = PsMaskDown
 	case 'a':
-		ps[0][0] = PsMaskLeft
+		pad0[0] = PsMaskLeft
 	case 'd':
-		ps[0][0] = PsMaskRight
+		pad0[0] = PsMaskRight
 
 	case 'u':
-		ps[1][0] = PsMaskSquare
+		pad1[0] = PsMaskSquare
 	case 'i':
-		ps[1][0] = PsMaskUp
+		pad1[0] = PsMaskUp
 	case 'k':
-		ps[1][0] = PsMaskDown
+		pad1[0] = PsMaskDown
 	case 'j':
-		ps[1][0] = PsMaskLeft
+		pad1[0] = PsMaskLeft
 	case 'l':
-		ps[1][0] = PsMaskRight
+		pad1[0] = PsMaskRight
 	}
 
+	ps := make([]Pad, 4)
+	ps[0] = &pad0
+	ps[1] = &pad1
 	return ps
 }
