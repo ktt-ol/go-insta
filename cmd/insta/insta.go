@@ -112,9 +112,10 @@ func main() {
 
 		if runLife.Seconds() > 0 {
 			l := life.NewLife(insta.ScreenWidth, insta.ScreenHeight)
+			t := time.NewTicker(2 * time.Second)
+
 			go func() {
-				t := time.Tick(2 * time.Second)
-				for _ = range t {
+				for _ = range t.C {
 					l.AddRandomSpaceship()
 				}
 			}()
@@ -133,6 +134,8 @@ func main() {
 				l.Step()
 				prev, s = s, prev
 			}
+
+			t.Stop()
 		}
 
 		if runSpaceflight.Seconds() > 0 {
