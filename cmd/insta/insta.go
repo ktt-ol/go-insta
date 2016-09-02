@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/tarm/serial"
@@ -50,7 +52,7 @@ func main() {
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		port           = flag.String("port", "", "serial port")
-		joystick       = flag.Int("joystick", -1, "joystick id")
+		joystick       = flag.String("joystick", "", "joystick ids")
 		term           = flag.Bool("term", false, "use terminal")
 	)
 
@@ -89,8 +91,16 @@ func main() {
 	} else if *term {
 		kp := insta.NewKeyboardPad()
 		pads = kp.Pads
-	} else if *joystick >= 0 {
-		kp := insta.NewJoystick(*joystick)
+	} else if *joystick != "" {
+		var ids []int
+		for _, idStr := range strings.Split(*joystick, ",") {
+			id, err := strconv.ParseInt(idStr, 10, 32)
+			if err != nil {
+				log.Fatalf("invalid -joystick option", err)
+			}
+			ids = append(ids, int(id))
+		}
+		kp := insta.NewJoystick(ids)
 		pads = kp.Pads
 	} else {
 		pads = func() []insta.Pad {

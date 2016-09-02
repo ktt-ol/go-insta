@@ -7,24 +7,28 @@ import (
 )
 
 type Joystick struct {
-	stick joystick.Joystick
+	sticks []joystick.Joystick
 }
 
-func NewJoystick(id int) *Joystick {
-	j, err := joystick.Open(id)
-	if err != nil {
-		log.Fatalf("unable to open joystick %d: %s", id, err)
+func NewJoystick(ids []int) *Joystick {
+	js := &Joystick{}
+	for _, id := range ids {
+		j, err := joystick.Open(id)
+		if err != nil {
+			log.Fatalf("unable to open joystick %d: %s", id, err)
+		}
+		js.sticks = append(js.sticks, j)
 	}
-
-	return &Joystick{stick: j}
+	return js
 }
 
-func (j *Joystick) Pads() []Pad {
+func (js *Joystick) Pads() []Pad {
 	pads := make([]Pad, 4)
-	s, _ := j.stick.Read()
-
-	p := JoystickState{s}
-	pads[0] = &p
+	for i, j := range js.sticks {
+		s, _ := j.Read()
+		p := JoystickState{s}
+		pads[i] = &p
+	}
 	return pads
 }
 
