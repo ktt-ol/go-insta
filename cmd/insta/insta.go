@@ -126,9 +126,14 @@ func main() {
 			blendSteps := int(float32(*fps) / float32(sps))
 
 			till := time.Now().Add(*runLife)
+
+		lifeLoop:
 			for time.Now().Before(till) {
 				l.UpdateScreen(s)
 				for _, img := range insta.BlendScreens(prev, s, blendSteps) {
+					if pads()[0].Start() {
+						break lifeLoop
+					}
 					c.SetScreen(img)
 				}
 				l.Step()
@@ -136,10 +141,6 @@ func main() {
 			}
 
 			t.Stop()
-		}
-
-		if runSpaceflight.Seconds() > 0 {
-			insta.Spaceflight(c, *runSpaceflight)
 		}
 
 		if runTron.Seconds() > 0 {
@@ -176,6 +177,10 @@ func main() {
 				}
 			}
 			c.SetAfterglow(0.3)
+		}
+
+		if runSpaceflight.Seconds() > 0 {
+			insta.Spaceflight(c, *runSpaceflight)
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
