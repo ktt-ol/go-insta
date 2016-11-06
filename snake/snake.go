@@ -50,6 +50,7 @@ type Player struct {
 	Head     Piece
 	Tail     []Piece
 	Length   int
+	Score    int
 	Dir      Direction
 	idleTime time.Time
 }
@@ -82,7 +83,7 @@ type Field [][]Cell
 type Game struct {
 	Width, Height int
 	Field         Field
-	Players       []Player
+	Players       []*Player
 	tickDur       time.Duration
 	ExitAfterIdle time.Duration
 }
@@ -114,8 +115,8 @@ func NewGame(w, h int, exitAfterIdle time.Duration) *Game {
 		Field:  f,
 		Width:  w,
 		Height: h,
-		Players: []Player{
-			{
+		Players: []*Player{
+			&Player{
 				Head: Piece{
 					Color: color.RGBA{255, 255, 0, 255},
 					X:     insta.ScreenWidth / 2,
@@ -126,7 +127,7 @@ func NewGame(w, h int, exitAfterIdle time.Duration) *Game {
 				Length:   10,
 				idleTime: time.Now().Add(exitAfterIdle),
 			},
-			{
+			&Player{
 				Head: Piece{
 					Color: color.RGBA{255, 0, 255, 255},
 					X:     insta.ScreenWidth / 2,
@@ -156,7 +157,7 @@ func (g *Game) clear() {
 	}
 }
 
-func (g *Game) move(p Player) Player {
+func (g *Game) move(p *Player) {
 	switch p.Dir {
 	case Up:
 		p.Head.Y -= 1
@@ -171,7 +172,6 @@ func (g *Game) move(p Player) Player {
 	p.Head.X %= g.Width
 	p.Head.Y += g.Height
 	p.Head.Y %= g.Height
-	return p
 }
 
 func (g *Game) Step(pads []insta.Pad) GameStatus {
@@ -220,25 +220,50 @@ func (g *Game) Step(pads []insta.Pad) GameStatus {
 			return End
 		}
 
-		p = g.move(p)
+		g.move(p)
 
 		end := p.PushHead()
 		if end.Set {
 			g.Field[end.Y][end.X].Snake = false
 		}
+	}
 
+	// check for head crash, both players loose
+	for i, p := range g.Players {
+		if p.idleTime.IsZero() {
+			continue
+		}
+		for _, o := range g.Players[i+1:] {
+			if o.idleTime.IsZero() {
+				continue
+			}
+			if p.Head.X == o.Head.X && p.Head.Y == o.Head.Y {
+				p.Score -= 50
+				o.Score -= 50
+				g.clear()
+				return End
+			}
+		}
+	}
+
+	for _, p := range g.Players {
+		if p.idleTime.IsZero() {
+			continue
+		}
 		h := p.Head
 		if g.Field[h.Y][h.X].Snake {
 			g.clear()
 			p.Dir = None
+			p.Score -= 50
 			return End
 		} else if g.Field[h.Y][h.X].Fruit {
 			g.Field[h.Y][h.X].Fruit = false
 			p.Head.Color = g.Field[h.Y][h.X].Color
 			p.Length += 10
+			p.Score += 10
 			g.SpawnFruit()
 			if g.tickDur > 20*time.Millisecond {
-				g.tickDur -= 2 * time.Millisecond
+				g.tickDur -= 1 * time.Millisecond
 			}
 		}
 
@@ -247,7 +272,6 @@ func (g *Game) Step(pads []insta.Pad) GameStatus {
 		c.Color = h.Color
 		g.Field[h.Y][h.X] = c
 
-		g.Players[i] = p
 	}
 	if !activePlayer {
 		return Exit
@@ -291,10 +315,10 @@ func (g *Game) PaintScore(img draw.Image) {
 
 	scores := " "
 	for _, p := range g.Players {
-		if p.Length <= 10 {
+		if p.Score == 0 {
 			scores += "    "
 		} else {
-			scores += fmt.Sprintf("%3d ", p.Length)
+			scores += fmt.Sprintf("%3d ", p.Score)
 		}
 	}
 	d := &font.Drawer{
