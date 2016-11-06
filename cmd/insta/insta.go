@@ -166,16 +166,19 @@ func main() {
 
 		if runSnake.Seconds() > 0 {
 			c.SetAfterglow(0.2)
+			sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight, *runSnake)
 		SnakeLoop:
 			for {
 				s := insta.NewScreen()
-				sn := snake.NewGame(insta.ScreenWidth, insta.ScreenHeight, *runSnake)
+				sn.Init()
 				for {
 					status := sn.Step(pads())
 					sn.Paint(s)
 					c.SetScreenImmediate(s)
 					if status == snake.End {
-						time.Sleep(100 * time.Millisecond) // prevent screen from being dropped
+						time.Sleep(250 * time.Millisecond)
+						// wait to prevent score screen from being overdrawn
+						// by last game screen
 						sn.PaintScore(s)
 						c.SetScreenImmediate(s)
 						time.Sleep(3 * time.Second)
