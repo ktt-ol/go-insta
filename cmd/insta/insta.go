@@ -13,6 +13,7 @@ import (
 	"github.com/tarm/serial"
 
 	"github.com/ktt-ol/go-insta"
+	"github.com/ktt-ol/go-insta/audio"
 	"github.com/ktt-ol/go-insta/life"
 	"github.com/ktt-ol/go-insta/snake"
 	"github.com/ktt-ol/go-insta/tron"
@@ -51,6 +52,8 @@ func main() {
 		runTron        = flag.Duration("tron", 0, "run tron for duration")
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
+		runAudio       = flag.Duration("audio", 0, "audio graph duration")
+		audioDevice    = flag.String("audiodevice", "", "serial port of audio device")
 		port           = flag.String("port", "", "serial port")
 		joystick       = flag.String("joystick", "", "joystick ids")
 		term           = flag.Bool("term", false, "use terminal")
@@ -88,9 +91,6 @@ func main() {
 		}
 		mp := insta.NewMultiPad(ser)
 		pads = mp.Pads
-	} else if *term {
-		kp := insta.NewKeyboardPad()
-		pads = kp.Pads
 	} else if *joystick != "" {
 		var ids []int
 		for _, idStr := range strings.Split(*joystick, ",") {
@@ -105,6 +105,20 @@ func main() {
 	} else {
 		pads = func() []insta.Pad {
 			return nil
+		}
+	}
+
+	var audioGraph *audio.LevelGraph
+	if runAudio.Seconds() > 0 && *audioDevice != "" {
+		cfg := &serial.Config{}
+		cfg.Baud = 115200
+		cfg.Name = *audioDevice
+		cfg.ReadTimeout = time.Second * 5
+		var err error
+		audioInput, err := serial.OpenPort(cfg)
+		audioGraph = audio.NewLevelGraph(audioInput)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
 
@@ -161,6 +175,19 @@ func main() {
 				tr.Paint(s)
 				c.SetScreenImmediate(s)
 				time.Sleep(50 * time.Microsecond)
+			}
+		}
+
+		if runAudio.Seconds() > 0 && audioGraph != nil {
+			till := time.Now().Add(*runAudio)
+			s := insta.NewScreen()
+
+			c.SetAfterglow(0.1)
+			for time.Now().Before(till) {
+				audioGraph.Next()
+				audioGraph.UpdateScreen(s)
+				c.SetScreenImmediate(s)
+				time.Sleep(50 * time.Millisecond)
 			}
 		}
 
