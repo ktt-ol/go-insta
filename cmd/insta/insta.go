@@ -16,7 +16,6 @@ import (
 	"github.com/ktt-ol/go-insta/audio"
 	"github.com/ktt-ol/go-insta/life"
 	"github.com/ktt-ol/go-insta/snake"
-	"github.com/ktt-ol/go-insta/tron"
 )
 
 var addrs = []string{
@@ -49,7 +48,6 @@ func main() {
 		fps            = flag.Int("fps", 25, "fps")
 		runLife        = flag.Duration("life", 0, "run life for duration")
 		runSnake       = flag.Duration("snake", 0, "run snake for duration")
-		runTron        = flag.Duration("tron", 0, "run tron for duration")
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		runAudio       = flag.Duration("audio", 0, "audio graph duration")
@@ -165,17 +163,6 @@ func main() {
 			}
 
 			t.Stop()
-		}
-
-		if runTron.Seconds() > 0 {
-			s := insta.NewScreen()
-			tr := tron.NewGame(insta.ScreenWidth, insta.ScreenHeight)
-			for {
-				tr.Step(pads())
-				tr.Paint(s)
-				c.SetScreenImmediate(s)
-				time.Sleep(50 * time.Microsecond)
-			}
 		}
 
 		if runAudio.Seconds() > 0 && audioGraph != nil {
