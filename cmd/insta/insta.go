@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ktt-ol/go-insta/srv"
+
 	"github.com/tarm/serial"
 
 	"github.com/ktt-ol/go-insta"
@@ -51,6 +53,7 @@ func main() {
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		runAudio       = flag.Duration("audio", 0, "audio graph duration")
+		runServer      = flag.Bool("server", false, "start TCP server on port 2323, accepting images")
 		audioDevice    = flag.String("audiodevice", "", "serial port of audio device")
 		port           = flag.String("port", "", "serial port")
 		joystick       = flag.String("joystick", "", "joystick ids")
@@ -124,6 +127,11 @@ func main() {
 	go c.Run()
 
 	c.SetAfterglow(0.3)
+
+	if *runServer {
+		srv.Server(c)
+		return
+	}
 
 	for {
 		if *runLogo {
