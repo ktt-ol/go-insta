@@ -60,6 +60,7 @@ func main() {
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		runAudio       = flag.Duration("audio", 0, "audio graph duration")
+		runRainbow     = flag.Duration("rainbow", 0, "rainbow duration")
 		runGifs        = flag.Duration("gifs", 0, "gif repeat duration")
 		runServer      = flag.Bool("server", false, "start TCP server on port 2323, accepting images")
 		audioDevice    = flag.String("audiodevice", "", "serial port of audio device")
@@ -142,6 +143,9 @@ func main() {
 	}
 
 	for {
+		if runRainbow.Seconds() > 0 {
+			insta.Rainbow(c, *runRainbow)
+		}
 
 		if *runLogo {
 			c.SetAfterglow(0)
