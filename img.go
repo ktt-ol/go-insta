@@ -64,7 +64,6 @@ func showGif(c Client, fname string, d time.Duration) {
 			}
 			draw.Draw(scr, bnds, img, image.ZP, op)
 			c.SetScreenImmediate(scr)
-			// fmt.Println(g.Disposal[i], g.Delay[i], len(g.Delay), g.BackgroundIndex, gif.DisposalPrevious, gif.DisposalBackground, gif.DisposalNone)
 			time.Sleep(time.Duration(g.Delay[i]) * time.Millisecond)
 		}
 		if d == 0 {
