@@ -53,6 +53,7 @@ func main() {
 		runSpaceflight = flag.Duration("spaceflight", 0, "run spaceflight for duration")
 		runLogo        = flag.Bool("logo", false, "show mainframe logo")
 		runAudio       = flag.Duration("audio", 0, "audio graph duration")
+		runGifs        = flag.Duration("gifs", 0, "gif repeat duration")
 		runServer      = flag.Bool("server", false, "start TCP server on port 2323, accepting images")
 		audioDevice    = flag.String("audiodevice", "", "serial port of audio device")
 		port           = flag.String("port", "", "serial port")
@@ -134,10 +135,16 @@ func main() {
 	}
 
 	for {
+
 		if *runLogo {
 			c.SetAfterglow(0)
-			insta.ShowImage(c, "img/mainframe-mod.png")
+			insta.ScrollImage(c, "img/mainframe-mod.png")
 			c.SetAfterglow(0.4)
+		}
+
+		if runGifs.Seconds() > 0 {
+			insta.RandomGif(c, "gifs", *runGifs)
+			time.Sleep(100 * time.Millisecond)
 		}
 
 		if runLife.Seconds() > 0 {
@@ -173,6 +180,11 @@ func main() {
 			t.Stop()
 		}
 
+		if runGifs.Seconds() > 0 {
+			insta.RandomGif(c, "gifs", *runGifs)
+			time.Sleep(200 * time.Millisecond)
+		}
+
 		if runAudio.Seconds() > 0 && audioGraph != nil {
 			till := time.Now().Add(*runAudio)
 			s := insta.NewScreen()
@@ -184,6 +196,11 @@ func main() {
 				c.SetScreenImmediate(s)
 				time.Sleep(50 * time.Millisecond)
 			}
+		}
+
+		if runGifs.Seconds() > 0 {
+			insta.RandomGif(c, "gifs", *runGifs)
+			time.Sleep(200 * time.Millisecond)
 		}
 
 		if runSnake.Seconds() > 0 {
