@@ -64,7 +64,7 @@ func (g *LevelGraph) UpdateScreen(s *insta.Screen) {
 	defer g.mu.Unlock()
 	for x := 0; x < insta.ScreenWidth; x++ {
 		for y := 0; y < insta.ScreenHeight; y++ {
-			if (g.hist[x] / 30.0 * insta.ScreenHeight) > (insta.ScreenHeight - float64(y)) {
+			if ((g.hist[x] + 1) / 31.0 * insta.ScreenHeight) > (insta.ScreenHeight - float64(y)) {
 				r, g, b := insta.HsvToRgb(float64(y*3), 0.7, 0.8)
 				s.Set(x, y, color.RGBA{uint8(r * 255), uint8(g * 255), uint8(b * 255), 128})
 			} else {
