@@ -119,9 +119,10 @@ func main() {
 		cfg.ReadTimeout = time.Second * 5
 		var err error
 		audioInput, err := serial.OpenPort(cfg)
-		audioGraph = audio.NewLevelGraph(audioInput)
 		if err != nil {
-			log.Fatal(err)
+			log.Println("warn: skipping audio", err)
+		} else {
+			audioGraph = audio.NewLevelGraph(audioInput)
 		}
 	}
 
