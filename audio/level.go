@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/ktt-ol/go-insta"
 )
@@ -56,7 +57,12 @@ func (g *LevelGraph) Start() {
 }
 
 func (g *LevelGraph) Next() {
-	<-g.step
+	t := time.Tick(100 * time.Millisecond)
+	// avoid blocking if we don't get values from audio level
+	select {
+	case <-g.step:
+	case <-t:
+	}
 }
 
 func (g *LevelGraph) UpdateScreen(s *insta.Screen) {
