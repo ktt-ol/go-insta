@@ -1,0 +1,13 @@
+[Unit]
+Description=insta client
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/root
+ExecStart=/bin/bash -c '/root/insta -life 30s -spaceflight 5s -logo'
+RestartSec=5
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+#/etc/network/interfaces
+
+# Local
+auto lo
+iface lo inet loopback
+
+# Ethernet
+auto eth0
+iface eth0 inet static
+address 172.16.42.1
+netmask 255.255.255.0
+#gateway 192.168.0.1
+#dns-nameservers 8.8.8.8 8.8.4.4
+
+# Wifi
+auto wlan0
+iface wlan0 inet dhcp
+address 192.168.0.100
+netmask 255.255.255.0
+gateway 192.168.0.1
+wireless-essid mainframe-legacy
+wireless-key XXXXX
+wireless-mode Managed
+wireless-power off
+wpa-ssid mainframe-legacy
+wpa-psk spacebeta
