@@ -107,7 +107,10 @@ func main() {
 		pads = kp.Pads
 	} else {
 		pads = func() []insta.Pad {
-			return nil
+			return []insta.Pad{
+				&insta.NullPad{},
+				&insta.NullPad{},
+			}
 		}
 	}
 

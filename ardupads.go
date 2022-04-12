@@ -209,3 +209,18 @@ func (p *PSController) String() string {
 
 	return string(b.Bytes())
 }
+
+type NullPad struct{}
+
+func (p *NullPad) Up() bool    { return false }
+func (p *NullPad) Right() bool { return false }
+func (p *NullPad) Down() bool  { return false }
+func (p *NullPad) Left() bool  { return false }
+
+func (p *NullPad) Select() bool { return false }
+func (p *NullPad) Start() bool  { return false }
+
+func (p *NullPad) North() bool { return false }
+func (p *NullPad) East() bool  { return false }
+func (p *NullPad) South() bool { return false }
+func (p *NullPad) West() bool  { return false }
