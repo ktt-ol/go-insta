@@ -1,0 +1,9 @@
+Code for LED Wall
+-----------------
+
+Start local test client with terminal output:
+
+  go run ./cmd/insta -term -life 10s -logo
+
+
+See -help for other modes/animations. Most modes require a time argument (like 10s). The mode stops after this duration and the next starts. This will repeat indefinitely.
